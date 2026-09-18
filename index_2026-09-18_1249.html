@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Lanes</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230E7C7B'/%3E%3Crect x='6' y='7' width='5' height='18' rx='1.5' fill='%23fff'/%3E%3Crect x='13.5' y='7' width='5' height='11' rx='1.5' fill='%23fff'/%3E%3Crect x='21' y='7' width='5' height='14' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --bg:#F3F5F8; --bg2:#E9EDF2; --surface:#FFFFFF; --surface2:#F7F9FB; --ink:#161B24; --ink2:#4A5566; --muted:#7D8797; --line:#DDE3EA; --line2:#CBD3DD;
+  --accent:#0E7C7B; --accent-ink:#FFFFFF; --accent-soft:#D9F0EE; --accent-text:#0B6463;
+  --ok:#1F8F4E; --warn:#C27A00; --crit:#C93B3B; --warn-soft:#FFF1D6; --crit-soft:#FBE3E3; --ok-soft:#DDF3E6;
+  --shadow:0 1px 2px rgba(20,30,50,.06),0 4px 14px rgba(20,30,50,.08);
+  --shadow-lg:0 12px 40px rgba(20,30,50,.18);
+  --radius:10px; --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --display:"Sora","IBM Plex Sans",system-ui,sans-serif;
+  --l-red:#D9534F;--l-orange:#E8863B;--l-yellow:#D9B12D;--l-green:#3FA55C;--l-teal:#2A9D8F;--l-blue:#3B7DD8;--l-purple:#8A5CD6;--l-pink:#D65C9E;--l-grey:#8B95A5;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141922; --bg2:#0F131A; --surface:#1C2330; --surface2:#222B39; --ink:#ECF0F5; --ink2:#B7C0CD; --muted:#7F8A9B; --line:#2C3542; --line2:#3A4555;
+  --accent:#2BB3AF; --accent-ink:#0B1613; --accent-soft:#183835; --accent-text:#5ED3CE;
+  --ok:#43B76F; --warn:#E0A030; --crit:#E46262; --warn-soft:#3B2D12; --crit-soft:#3E1F1F; --ok-soft:#173824;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35); --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#141922; --bg2:#0F131A; --surface:#1C2330; --surface2:#222B39; --ink:#ECF0F5; --ink2:#B7C0CD; --muted:#7F8A9B; --line:#2C3542; --line2:#3A4555;
+  --accent:#2BB3AF; --accent-ink:#0B1613; --accent-soft:#183835; --accent-text:#5ED3CE;
+  --ok:#43B76F; --warn:#E0A030; --crit:#E46262; --warn-soft:#3B2D12; --crit-soft:#3E1F1F; --ok-soft:#173824;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35); --shadow-lg:0 12px 40px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+a{color:var(--accent-text)}
+::placeholder{color:var(--muted)}
+#app{height:100%;display:flex;flex-direction:column}
+
+/* ---------- Buttons & inputs ---------- */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);font-weight:500;white-space:nowrap;line-height:1.2}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink2)}
+.btn.ghost:hover{background:var(--bg2);color:var(--ink)}
+.btn.danger{color:var(--crit)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.btn.icon{padding:7px;width:34px;height:34px;justify-content:center}
+.btn[disabled]{opacity:.5;cursor:default}
+.input,.select,.textarea{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--surface);color:var(--ink)}
+.textarea{resize:vertical;min-height:80px;line-height:1.5}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+label.lbl{display:block;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px}
+.row{display:flex;gap:8px;align-items:center}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}
+.sm{font-size:12px}
+kbd{font-family:var(--font);font-size:11px;border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 5px;background:var(--surface2);color:var(--ink2)}
+.tabular{font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:500;line-height:1.5;border:1px solid transparent}
+.chip.tog{cursor:pointer;background:var(--surface2);border-color:var(--line);color:var(--ink2)}
+.chip.tog.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.avatar{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex:none;letter-spacing:.02em}
+
+/* ---------- Gate ---------- */
+#gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg)}
+#gate .card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:28px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:20px}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--accent);display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:6px}
+.brand .mark i{background:var(--accent-ink);border-radius:2px;opacity:.9}
+.brand .mark i:nth-child(2){height:60%}.brand .mark i:nth-child(3){height:80%}
+#gate h1{font-size:22px;margin:18px 0 4px}
+#gate p{margin:0 0 18px;color:var(--ink2)}
+#gate form{display:flex;flex-direction:column;gap:12px}
+.check{display:flex;align-items:center;gap:8px;color:var(--ink2);cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+.err{color:var(--crit);font-size:13px;min-height:18px}
+
+/* ---------- Topbar ---------- */
+#topbar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex:none;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+#topbar .brand{font-size:17px}
+#topbar .brand .mark{width:26px;height:26px;padding:5px}
+.boardpick{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--line2);background:var(--surface);font-family:var(--display);font-weight:600;max-width:260px}
+.boardpick .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardpick .swatch{width:12px;height:12px;border-radius:3px;flex:none}
+.search{position:relative;flex:1;min-width:140px;max-width:340px}
+.search input{padding-left:32px}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{padding:6px 11px;color:var(--ink2);font-weight:500;border-right:1px solid var(--line2)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent-soft);color:var(--accent-text)}
+.spacer{flex:1}
+.badge{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;align-items:center;justify-content:center}
+#status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+#status i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+#status.off i{background:var(--warn)}
+
+/* ---------- Board ---------- */
+#main{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+#board{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;display:flex;gap:12px;padding:16px;align-items:flex-start;scroll-padding:16px}
+.col{width:290px;flex:none;max-height:100%;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:12px}
+.col.collapsed{width:44px}
+.col.collapsed .colbody,.col.collapsed .coladd,.col.collapsed .colhead .cname,.col.collapsed .colhead .count,.col.collapsed .colmenu{display:none}
+.col.collapsed .colhead{flex-direction:column;padding:10px 6px;gap:8px;height:auto}
+.col.collapsed .vname{display:block;writing-mode:vertical-rl;font-weight:600;font-family:var(--display);font-size:13px;color:var(--ink2);white-space:nowrap}
+.vname{display:none}
+.colhead{display:flex;align-items:center;gap:6px;padding:10px 10px 6px 12px;cursor:grab;user-select:none}
+.colhead .cname{font-family:var(--display);font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 4px;border-radius:5px;border:1px solid transparent}
+.colhead .cname:focus{outline:none;border-color:var(--accent);background:var(--surface);white-space:normal}
+.colhead .count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;padding:1px 7px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.col.over-wip .colhead .count{background:var(--crit-soft);color:var(--crit);border-color:transparent;font-weight:600}
+.col.at-wip .colhead .count{background:var(--warn-soft);color:var(--warn);border-color:transparent;font-weight:600}
+.col.done-col .colhead .cname::before{content:"✓ ";color:var(--ok)}
+.colbody{flex:1;min-height:20px;overflow-y:auto;padding:4px 8px 4px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin}
+.coladd{padding:6px 8px 8px}
+.coladd button{width:100%;text-align:left;padding:7px 10px;border-radius:8px;color:var(--ink2);font-weight:500}
+.coladd button:hover{background:var(--surface);color:var(--ink)}
+.coladd textarea{width:100%;min-height:58px;border-radius:8px;border:1px solid var(--accent);background:var(--surface);padding:8px 10px;resize:none;box-shadow:var(--shadow)}
+.addcol{width:290px;flex:none}
+.addcol button{width:100%;padding:12px;border-radius:12px;border:1px dashed var(--line2);color:var(--ink2);font-weight:500;background:transparent}
+.addcol button:hover{background:var(--surface);color:var(--ink)}
+.addcol input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--accent);background:var(--surface)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 1px 2px rgba(20,30,50,.05);cursor:pointer;position:relative;user-select:none;touch-action:manipulation;overflow:hidden}
+.card:hover{border-color:var(--line2);box-shadow:var(--shadow)}
+.card .cover{height:32px}
+.card .cbody{padding:9px 10px 8px}
+.card .labels{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.card .labels span{height:7px;width:34px;border-radius:4px;display:block}
+.card .title{font-weight:500;line-height:1.35;word-break:break-word}
+.card.done .title{color:var(--muted);text-decoration:line-through}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+.card .meta:empty{display:none}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:6px;background:var(--surface2);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.pill.overdue{background:var(--crit-soft);color:var(--crit);border-color:transparent;font-weight:600}
+.pill.soon{background:var(--warn-soft);color:var(--warn);border-color:transparent;font-weight:600}
+.pill.done{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.checkdone{color:var(--ok)}
+.prio{width:14px;height:14px;display:inline-grid;grid-auto-flow:column;gap:1px;align-items:end}
+.prio i{width:3px;background:var(--line2);border-radius:1px}
+.prio i:nth-child(1){height:5px}.prio i:nth-child(2){height:9px}.prio i:nth-child(3){height:13px}
+.prio.low i:nth-child(1){background:var(--ok)}
+.prio.medium i:nth-child(-n+2){background:var(--warn)}
+.prio.high i{background:var(--crit)}
+.prio.urgent i{background:var(--crit)}
+.pill.urgent{background:var(--crit);color:#fff;border-color:transparent;font-weight:700}
+.card .num{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card .avatars{display:flex;margin-left:auto}
+.card .avatars .avatar{width:22px;height:22px;margin-left:-6px;border:2px solid var(--surface)}
+.card .avatars .avatar:first-child{margin-left:0}
+.placeholder{border:2px dashed var(--accent);border-radius:var(--radius);background:var(--accent-soft);opacity:.7}
+.card.dragging{opacity:.35}
+#ghost{position:fixed;z-index:100;pointer-events:none;width:274px;transform:rotate(2deg);box-shadow:var(--shadow-lg)}
+#ghost .card{cursor:grabbing}
+.col.dragging{opacity:.4}
+.colplaceholder{width:290px;flex:none;min-height:120px;border:2px dashed var(--accent);border-radius:12px;background:var(--accent-soft);opacity:.6}
+body.is-dragging{cursor:grabbing;user-select:none}
+body.is-dragging *{cursor:grabbing!important}
+
+.empty{margin:auto;text-align:center;color:var(--muted);padding:40px 16px;max-width:420px}
+.empty h2{font-size:20px;color:var(--ink);margin-bottom:8px}
+.empty p{margin:0 0 16px}
+
+/* ---------- List view ---------- */
+#list{flex:1;overflow:auto;padding:16px}
+table.tbl{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:640px}
+.tblwrap{overflow-x:auto;border-radius:12px}
+table.tbl th,table.tbl td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+table.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);background:var(--surface2);cursor:pointer;user-select:none;white-space:nowrap}
+table.tbl th.sorted::after{content:" ↓";color:var(--accent)}
+table.tbl th.sorted.desc::after{content:" ↑"}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl tbody tr{cursor:pointer}
+table.tbl tbody tr:hover td{background:var(--surface2)}
+.lchip{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;color:#fff;margin-right:3px}
+.grouphead td{background:var(--bg2)!important;font-family:var(--display);font-weight:600;font-size:13px}
+
+/* ---------- Calendar ---------- */
+#cal{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.calhead{display:flex;align-items:center;gap:8px}
+.calhead h2{font-size:18px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:560px}
+.calgrid .dn{background:var(--surface2);padding:6px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);font-weight:600}
+.calgrid .day{background:var(--surface);min-height:96px;padding:6px;display:flex;flex-direction:column;gap:4px}
+.calgrid .day.other{background:var(--bg2);color:var(--muted)}
+.calgrid .day .d{font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.calgrid .day.today .d{color:var(--accent-text)}
+.calgrid .day.today .d::after{content:"heute";margin-left:5px;font-size:10px;padding:0 5px;border-radius:99px;background:var(--accent-soft)}
+.calcard{font-size:12px;padding:3px 6px;border-radius:5px;background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--accent);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calcard.od{border-left-color:var(--crit)}
+.calcard.dn{border-left-color:var(--ok);color:var(--muted);text-decoration:line-through}
+.calwrap{overflow-x:auto}
+
+/* ---------- Drawer ---------- */
+#scrim{position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:30;opacity:0;transition:opacity .15s}
+#scrim.show{opacity:1}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);z-index:31;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .18s ease;padding-top:env(safe-area-inset-top,0px)}
+#drawer.show{transform:none}
+@media (prefers-reduced-motion:reduce){#drawer,#scrim{transition:none}}
+.dhead{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dhead .num{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dbody{flex:1;overflow-y:auto;padding:16px 20px 32px;display:flex;flex-direction:column;gap:20px}
+.dtitle{font-family:var(--display);font-size:20px;font-weight:600;width:100%;border:1px solid transparent;border-radius:8px;padding:6px 8px;margin:0;background:transparent;resize:none;line-height:1.3;overflow:hidden;min-height:34px;field-sizing:content;display:block}
+.dtitle:focus{border-color:var(--accent);background:var(--surface2);outline:none}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.dgrid{grid-template-columns:1fr}}
+.sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);font-family:var(--font);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sec h3 .btn{margin-left:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatch{width:28px;height:22px;border-radius:6px;border:2px solid transparent;cursor:pointer}
+.swatch.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface) inset}
+.swatch.none{background:var(--surface2);border:1px dashed var(--line2);position:relative}
+.swatch.none::after{content:"";position:absolute;left:4px;right:4px;top:50%;border-top:2px solid var(--muted);transform:rotate(-30deg)}
+.progress{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden;flex:1}
+.progress i{display:block;height:100%;background:var(--ok);transition:width .2s}
+.cl{display:flex;flex-direction:column;gap:2px}
+.cli{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px}
+.cli:hover{background:var(--surface2)}
+.cli input[type=checkbox]{width:16px;height:16px;accent-color:var(--ok);flex:none}
+.cli .t{flex:1;min-width:0;border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent}
+.cli .t:focus{border-color:var(--accent);outline:none}
+.cli.done .t{color:var(--muted);text-decoration:line-through}
+.cli .x{opacity:0;color:var(--muted)}
+.cli:hover .x{opacity:1}
+.cli .x:hover{color:var(--crit)}
+.comment{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.comment .body{flex:1;min-width:0}
+.comment .body .when{font-size:11px;color:var(--muted);margin-bottom:2px}
+.comment .body p{margin:0;white-space:pre-wrap;word-break:break-word}
+.act{font-size:12px;color:var(--muted);padding:3px 0;border-top:1px dashed var(--line)}
+.act b{color:var(--ink2);font-weight:500}
+.dfoot{display:flex;gap:6px;padding:10px 16px;border-top:1px solid var(--line);flex-wrap:wrap;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.dfoot .spacer{flex:1}
+.desc-view{white-space:pre-wrap;word-break:break-word;line-height:1.55;padding:8px 10px;border:1px dashed var(--line2);border-radius:8px;cursor:text;min-height:44px;color:var(--ink)}
+.desc-view:empty::before{content:"Beschreibung hinzufügen …";color:var(--muted)}
+.desc-view a{word-break:break-all}
+
+/* ---------- Popover / modal ---------- */
+.pop{position:fixed;z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:8px;min-width:220px;max-width:min(360px,calc(100vw - 32px));max-height:min(70vh,560px);overflow:auto}
+.pop .mi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px;color:var(--ink)}
+.pop .mi:hover{background:var(--surface2)}
+.pop .mi.danger{color:var(--crit)}
+.pop .mi .k{margin-left:auto}
+.pop hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.pop .sec{padding:6px 10px 8px}
+.pop .sec h3{margin-bottom:6px}
+.pop .bi{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:8px}
+.pop .bi:hover{background:var(--surface2)}
+.pop .bi.on{background:var(--accent-soft)}
+.pop .bi .swatch{width:14px;height:14px;border-radius:4px;flex:none}
+#modalwrap{position:fixed;inset:0;z-index:60;background:rgba(10,14,20,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:22px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow:auto}
+.modal h2{font-size:18px}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.tpl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:480px){.tpl{grid-template-columns:1fr}}
+.tpl button{text-align:left;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--surface)}
+.tpl button.on{border-color:var(--accent);background:var(--accent-soft)}
+.tpl button b{display:block;font-family:var(--display);font-weight:600}
+.tpl button span{font-size:12px;color:var(--muted)}
+.lrow{display:flex;align-items:center;gap:8px;padding:4px 0}
+.lrow input.input{flex:1}
+.colorpick{display:flex;gap:5px;flex-wrap:wrap}
+.colorpick .swatch{width:22px;height:22px;border-radius:50%}
+
+/* ---------- Toast ---------- */
+#toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{pointer-events:auto;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px;font-weight:500;max-width:calc(100vw - 32px)}
+.toast button{color:var(--accent);font-weight:600}
+:root[data-theme="dark"] .toast, :root:not([data-theme="light"]) .toast{color:var(--ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast{background:var(--surface2);border:1px solid var(--line2)}}
+:root[data-theme="dark"] .toast{background:var(--surface2);border:1px solid var(--line2)}
+:root[data-theme="light"] .toast{background:#161B24;color:#F3F5F8}
+
+/* ---------- Responsive ---------- */
+@media (max-width:720px){
+  #topbar{padding:8px 12px;gap:6px}
+  #topbar .brand > span:last-child{display:none}
+  .boardpick{max-width:160px}
+  .search{order:10;flex-basis:100%;max-width:none}
+  .hide-m{display:none!important}
+  #board{padding:12px;gap:10px;scroll-snap-type:x mandatory}
+  .col,.addcol{width:min(86vw,300px);scroll-snap-align:start}
+  .colhead .cname{font-size:15px}
+}
+.setup{max-width:640px;margin:40px auto;padding:0 16px;line-height:1.6}
+.setup ol{padding-left:22px}.setup li{margin:8px 0}
+.setup code{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px}
+</style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ============================================================
+   KONFIGURATION – nach dem Supabase-Setup ausfüllen
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL: 'https://lmulfobmlplxyyxrrbzz.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_zlR9u8ohDxu046VrVyihgw_vKzkb3C5',
+  LOGIN_EMAIL: 'andreasraab@gmx.de', // das Konto, das du in Supabase unter Authentication → Users angelegt hast
+  APP_NAME: 'Lanes',
+};
+</script>
+<div id="app">
+  <div id="gate" hidden></div>
+  <header id="topbar" hidden></header>
+  <main id="main" hidden></main>
+  <div id="scrim" hidden></div>
+  <aside id="drawer" hidden aria-label="Karte"></aside>
+  <div id="toasts"></div>
+</div>
+
+<script>
+/* ============================================================
+   Lanes – Kanban
+   ============================================================ */
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = ()=> (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'').slice(0,12) : Math.random().toString(36).slice(2,14));
+const now = ()=> new Date().toISOString();
+const LS = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
+const SS = {get(k){try{return JSON.parse(sessionStorage.getItem(k))}catch{return null}},set(k,v){try{sessionStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{sessionStorage.removeItem(k)}catch{}}};
+const LABEL_COLORS = ['#D9534F','#E8863B','#D9B12D','#3FA55C','#2A9D8F','#3B7DD8','#8A5CD6','#D65C9E','#8B95A5'];
+const BOARD_COLORS = ['#0E7C7B','#3B7DD8','#8A5CD6','#D65C9E','#D9534F','#E8863B','#3FA55C','#5B6B85'];
+const VIEW_NAMES = {board:'Board',list:'Liste',cal:'Kalender'};
+const PRIOS = {none:'Keine',low:'Niedrig',medium:'Mittel',high:'Hoch',urgent:'Dringend'};
+const TEMPLATES = {
+  blank:{name:'Leer',desc:'Ohne Spalten – du legst selbst los',cols:[]},
+  standard:{name:'Standard',desc:'Backlog · To Do · In Arbeit · Review · Erledigt',cols:['Backlog','To Do','In Arbeit','Review','Erledigt'],done:4,wip:{2:3}},
+  sales:{name:'Vertrieb',desc:'Lead · Kontaktiert · Angebot · Verhandlung · Gewonnen',cols:['Lead','Kontaktiert','Angebot','Verhandlung','Gewonnen'],done:4},
+  content:{name:'Content',desc:'Ideen · Geplant · In Arbeit · Review · Veröffentlicht',cols:['Ideen','Geplant','In Arbeit','Review','Veröffentlicht'],done:4},
+  personal:{name:'Persönlich',desc:'Heute · Diese Woche · Später · Erledigt',cols:['Heute','Diese Woche','Später','Erledigt'],done:3},
+};
+const DEFAULT_LABELS = ()=>[{id:uid(),name:'Bug',color:'#D9534F'},{id:uid(),name:'Feature',color:'#3B7DD8'},{id:uid(),name:'Wichtig',color:'#E8863B'},{id:uid(),name:'Idee',color:'#8A5CD6'}];
+
+const S = {
+  ready:false, authed:false, chBoards:null, chBoard:null,
+  boards:[], boardId:null, columns:[], cards:[],
+  view: LS.get('lanes.view')||'board',
+  filter:{q:'',labels:[],members:[],prio:[],due:'',hideDone:false},
+  openCard:null, calMonth:null, listSort:{k:'order',d:1}, listGroup:true,
+  colScroll:{}, pendingUndo:null,
+};
+
+/* ---------- Theme ---------- */
+(function initTheme(){
+  const t = LS.get('lanes.theme'); if(t) document.documentElement.setAttribute('data-theme',t);
+})();
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const sys = matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  const eff = cur||sys; const next = eff==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next); LS.set('lanes.theme',next);
+}
+
+/* ---------- Toast ---------- */
+function toast(msg, action){
+  const el = document.createElement('div'); el.className='toast';
+  el.innerHTML = `<span>${esc(msg)}</span>`+(action?`<button>${esc(action.label)}</button>`:'');
+  if(action) $('button',el).onclick=()=>{action.fn(); el.remove();};
+  $('#toasts').appendChild(el);
+  setTimeout(()=>el.remove(), action?7000:3000);
+}
+
+/* ---------- Supabase client & Auth ---------- */
+let sb=null;
+const authStorage = {
+  _s(){ return LS.get('lanes.remember')===false ? sessionStorage : localStorage; },
+  getItem(k){ try{ return this._s().getItem(k) ?? sessionStorage.getItem(k) ?? localStorage.getItem(k); }catch{ return null; } },
+  setItem(k,v){ try{ this._s().setItem(k,v); }catch{} },
+  removeItem(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch{} },
+};
+function renderGate(err=''){
+  const g = $('#gate'); g.hidden=false;
+  g.innerHTML = `<div class="card">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>${esc(CONFIG.APP_NAME)}</div>
+    <h1>Anmelden</h1>
+    <p>Gib dein Passwort ein, um deine Boards zu öffnen.</p>
+    <form id="gateform" autocomplete="on">
+      <input type="email" name="username" value="${esc(CONFIG.LOGIN_EMAIL)}" autocomplete="username" hidden>
+      <div><label class="lbl" for="pw">Passwort</label><input class="input" id="pw" type="password" autocomplete="current-password" required autofocus></div>
+      <label class="check"><input type="checkbox" id="remember" ${LS.get('lanes.remember')===false?'':'checked'}> Auf diesem Gerät angemeldet bleiben</label>
+      <div class="err" id="gateerr">${esc(err)}</div>
+      <button class="btn primary" type="submit" id="gatebtn" style="justify-content:center;padding:10px">Anmelden</button>
+    </form>
+  </div>`;
+  $('#gateform').onsubmit = async e=>{
+    e.preventDefault();
+    const pw = $('#pw').value; const remember = $('#remember').checked; const btn=$('#gatebtn'); btn.disabled=true; btn.textContent='Prüfe …';
+    LS.set('lanes.remember', remember);
+    const {error} = await sb.auth.signInWithPassword({email:CONFIG.LOGIN_EMAIL, password:pw});
+    if(error){ renderGate(/invalid/i.test(error.message)?'Falsches Passwort.':'Anmeldung fehlgeschlagen: '+error.message); return; }
+    S.authed=true; $('#gate').hidden=true; startApp();
+  };
+  setTimeout(()=>$('#pw')?.focus(),50);
+}
+async function logout(){ try{ await sb.auth.signOut(); }catch{} location.reload(); }
+
+/* ---------- Boot ---------- */
+function renderSetup(){
+  $('#main').hidden=false;
+  $('#main').innerHTML=`<div class="setup">
+    <div class="brand" style="margin-bottom:16px"><span class="mark"><i></i><i></i><i></i></span>Lanes einrichten</div>
+    <p>Die Datei ist noch nicht mit Supabase verbunden. So geht's (einmalig, ca. 5 Minuten):</p>
+    <ol>
+      <li>Auf <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> ein kostenloses Projekt anlegen.</li>
+      <li>Im Projekt <b>SQL Editor</b> öffnen und den Inhalt von <code>setup.sql</code> ausführen.</li>
+      <li>Unter <b>Authentication → Users → Add user</b> einen Nutzer anlegen: E-Mail <code>${esc(CONFIG.LOGIN_EMAIL)}</code>, dein Wunsch-Passwort, „Auto Confirm User“ aktivieren.</li>
+      <li>Unter <b>Project Settings → API</b> die <b>Project URL</b> und den <b>anon public</b> Key kopieren.</li>
+      <li>Beide Werte oben in <code>index.html</code> im Block <code>CONFIG</code> eintragen und die Datei neu laden.</li>
+    </ol>
+    <p class="muted sm">Der anon-Key darf öffentlich sein – ohne erfolgreiche Anmeldung erlaubt die Datenbank keinen Zugriff (Row Level Security).</p>
+  </div>`;
+}
+async function boot(){
+  if(!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY || !window.supabase){ renderSetup(); return; }
+  sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {auth:{storage:authStorage, persistSession:true, autoRefreshToken:true}});
+  const main=$('#main'); main.hidden=false;
+  main.innerHTML=`<div class="empty"><h2>${esc(CONFIG.APP_NAME)}</h2><p class="muted">Verbinde …</p></div>`;
+  const {data:{session}} = await sb.auth.getSession();
+  main.hidden=true;
+  if(session){ S.authed=true; startApp(); } else renderGate();
+  sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT' && S.authed){ location.reload(); } });
+}
+
+/* ---------- Data layer (Supabase) ----------
+   Tabellen: boards, columns, cards – jeweils id + data (jsonb) + Filterspalten.
+   Die App arbeitet intern mit den JSON-Dokumenten, wie sie in `data` liegen. */
+const rowOf = (table, doc) => {
+  const d={...doc}; const id=d.id; delete d.id;
+  const row={id, data:d, updated_at:now()};
+  if(table==='columns'||table==='cards') row.board_id=d.boardId;
+  if(table==='cards') row.column_id=d.columnId;
+  return row;
+};
+const docOf = r => ({id:r.id, ...r.data});
+async function dbSet(table, doc){ const {error}=await sb.from(table).upsert(rowOf(table,doc)); if(error) throw error; }
+async function dbUpdate(table, id, patch){
+  const list = table==='boards'?S.boards:table==='columns'?S.columns:S.cards;
+  let cur = list.find(x=>x.id===id);
+  if(!cur){ const {data,error}=await sb.from(table).select('id,data').eq('id',id).single(); if(error) throw error; cur=docOf(data); }
+  await dbSet(table, {...cur, ...patch});
+}
+async function dbDelete(table, id){ const {error}=await sb.from(table).delete().eq('id',id); if(error) throw error; }
+async function dbList(table, boardId){
+  let q=sb.from(table).select('id,data'); if(boardId) q=q.eq('board_id',boardId);
+  const {data,error}=await q; if(error) throw error; return data.map(docOf);
+}
+function applyChange(table, payload){
+  const list = table==='boards'?S.boards:table==='columns'?S.columns:S.cards;
+  if(payload.eventType==='DELETE'){ const i=list.findIndex(x=>x.id===payload.old.id); if(i>=0) list.splice(i,1); }
+  else {
+    const doc=docOf(payload.new);
+    if(table!=='boards' && doc.boardId!==S.boardId){ const i=list.findIndex(x=>x.id===doc.id); if(i>=0) list.splice(i,1); }
+    else { const i=list.findIndex(x=>x.id===doc.id); if(i>=0) list[i]=doc; else list.push(doc); }
+  }
+  if(table==='boards'){ S.boards=S.boards.filter(b=>!b.archived).sort((a,b)=>(a.order||0)-(b.order||0)); if(!S.boards.find(b=>b.id===S.boardId)){ const nb=S.boards[0]?.id||null; if(nb) subscribeBoard(nb); else { S.boardId=null; S.columns=[]; S.cards=[]; } } }
+  else list.sort((a,b)=>(a.order||0)-(b.order||0));
+  renderTopbar(); renderMain(); refreshDrawer();
+}
+async function startApp(){
+  $('#topbar').hidden=false; $('#main').hidden=false;
+  try{ S.boards=(await dbList('boards')).filter(b=>!b.archived).sort((a,b)=>(a.order||0)-(b.order||0)); }
+  catch(e){ $('#main').innerHTML=`<div class="empty"><h2>Datenbank nicht erreichbar</h2><p>${esc(e.message||e)}<br><span class="sm muted">Wurde setup.sql ausgeführt? Bei längerer Nichtnutzung pausiert Supabase kostenlose Projekte – im Supabase-Dashboard „Resume project“ klicken und 1–2 Minuten warten.</span></p><button class="btn primary" onclick="location.reload()">Neu laden</button></div>`; return; }
+  S.ready=true;
+  const last=LS.get('lanes.board');
+  S.boardId=(S.boards.find(b=>b.id===last)||S.boards[0])?.id||null;
+  renderTopbar(); renderMain();
+  if(S.boardId) await subscribeBoard(S.boardId);
+  S.chBoards = sb.channel('boards-all').on('postgres_changes',{event:'*',schema:'public',table:'boards'},p=>applyChange('boards',p))
+    .subscribe(st=>{ $('#status')?.classList.toggle('off', st!=='SUBSCRIBED'); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.boardId) reloadBoard(); });
+}
+async function reloadBoard(){
+  if(!S.boardId) return;
+  try{ const [b,c,k]=await Promise.all([dbList('boards'),dbList('columns',S.boardId),dbList('cards',S.boardId)]);
+    S.boards=b.filter(x=>!x.archived).sort((a,b)=>(a.order||0)-(b.order||0)); S.columns=c.sort((a,b)=>a.order-b.order); S.cards=k.sort((a,b)=>a.order-b.order);
+    renderTopbar(); renderMain(); refreshDrawer(); }catch(e){ console.warn(e); }
+}
+async function subscribeBoard(id){
+  if(S.chBoard){ sb.removeChannel(S.chBoard); S.chBoard=null; }
+  S.columns=[]; S.cards=[]; S.colScroll={};
+  S.boardId=id; LS.set('lanes.board',id);
+  renderTopbar(); renderMain();
+  try{ const [c,k]=await Promise.all([dbList('columns',id),dbList('cards',id)]); if(S.boardId!==id) return; S.columns=c.sort((a,b)=>a.order-b.order); S.cards=k.sort((a,b)=>a.order-b.order); }
+  catch(e){ toast('Fehler beim Laden: '+(e.message||e)); }
+  renderMain(); refreshDrawer();
+  S.chBoard = sb.channel('board-'+id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'columns',filter:'board_id=eq.'+id},p=>applyChange('columns',p))
+    .on('postgres_changes',{event:'*',schema:'public',table:'cards',filter:'board_id=eq.'+id},p=>applyChange('cards',p))
+    .subscribe();
+}
+const board = ()=> S.boards.find(b=>b.id===S.boardId);
+const colCards = cid => S.cards.filter(c=>c.columnId===cid && !c.archived);
+async function write(fn, okMsg){
+  try{ await fn(); if(okMsg) toast(okMsg); }
+  catch(e){ console.error(e); toast('Speichern fehlgeschlagen: '+(e.message||e.code||e)); }
+}
+function nextOrder(list){ return list.length? Math.max(...list.map(x=>x.order||0))+1000 : 1000; }
+function orderBetween(prev,next){
+  if(prev==null && next==null) return 1000;
+  if(prev==null) return next-1000;
+  if(next==null) return prev+1000;
+  return (prev+next)/2;
+}
+function act(text){ return {at:now(), text}; }
+
+/* Boards */
+async function createBoard(name, tplKey, color){
+  const tpl = TEMPLATES[tplKey]||TEMPLATES.blank;
+  const bid = uid();
+  const labels = DEFAULT_LABELS();
+  await dbSet('boards',{id:bid, name, color, order:nextOrder(S.boards), labels, members:[], nextNum:1, createdAt:now(), archived:false});
+  let i=0; for(const cname of tpl.cols){
+    await dbSet('columns',{id:uid(), boardId:bid, name:cname, order:(i+1)*1000, wip:(tpl.wip&&tpl.wip[i])||0, collapsed:false, done: tpl.done===i});
+    i++;
+  }
+  S.boardId=bid; subscribeBoard(bid);
+}
+async function updateBoard(patch){ const b=board(); if(!b) return; Object.assign(b,patch); renderTopbar(); await dbUpdate('boards',b.id,patch); }
+async function deleteBoard(){
+  const b=board(); if(!b) return;
+  let r=await sb.from('cards').delete().eq('board_id',b.id); if(r.error) throw r.error;
+  r=await sb.from('columns').delete().eq('board_id',b.id); if(r.error) throw r.error;
+  await dbDelete('boards',b.id);
+  if(S.chBoard){ sb.removeChannel(S.chBoard); S.chBoard=null; }
+  S.boards=S.boards.filter(x=>x.id!==b.id); S.boardId=null; S.columns=[]; S.cards=[]; renderTopbar(); renderMain();
+  toast('Board gelöscht');
+}
+
+/* Columns */
+async function addColumn(name){
+  await dbSet('columns',{id:uid(), boardId:S.boardId, name, order:nextOrder(S.columns), wip:0, collapsed:false, done:false});
+}
+async function updateColumn(id, patch){ const c=S.columns.find(x=>x.id===id); if(c) Object.assign(c,patch); await dbUpdate('columns',id,patch); }
+async function deleteColumn(id){
+  const cards = colCards(id);
+  const others = S.columns.filter(c=>c.id!==id);
+  if(cards.length && !others.length){ toast('Erst die Karten verschieben oder archivieren.'); return; }
+  if(cards.length){
+    const ok = await confirmModal('Spalte löschen', `${cards.length} Karte(n) werden nach „${esc(others[0].name)}“ verschoben.`, 'Löschen');
+    if(!ok) return;
+    let o = nextOrder(colCards(others[0].id));
+    for(const c of cards){ await dbUpdate('cards',c.id,{columnId:others[0].id, order:o}); o+=1000; }
+  }
+  await dbDelete('columns',id);
+}
+
+/* Cards */
+async function addCard(columnId, title, extra={}){
+  const b=board(); const num=b.nextNum||1;
+  const col = S.columns.find(c=>c.id===columnId);
+  const id=uid();
+  const doc = {boardId:S.boardId, columnId, order:nextOrder(colCards(columnId)), num, title, desc:'', labels:[], members:[], priority:'none', due:'', cover:'', checklist:[], comments:[], activity:[act('Karte erstellt')], archived:false, done:!!col?.done, createdAt:now(), updatedAt:now(), ...extra};
+  S.cards.push({id,...doc}); renderMain();
+  await dbSet('cards',{id,...doc});
+  await updateBoard({nextNum:num+1});
+  return id;
+}
+async function updateCard(id, patch, activity){
+  const c = S.cards.find(x=>x.id===id); if(!c) return;
+  const p = {...patch, updatedAt:now()};
+  if(activity){ p.activity=[...(c.activity||[]), act(activity)].slice(-30); }
+  Object.assign(c, p); renderMain();
+  await write(()=>dbSet('cards',c));
+}
+async function moveCard(id, columnId, order){
+  const c=S.cards.find(x=>x.id===id); if(!c) return;
+  const col=S.columns.find(x=>x.id===columnId); const from=S.columns.find(x=>x.id===c.columnId);
+  const patch={columnId, order};
+  let activity=null;
+  if(from && col && from.id!==col.id){ activity=`Verschoben: ${from.name} → ${col.name}`; if(col.done && !c.done) patch.done=true; if(!col.done && from.done && c.done) patch.done=false; }
+  await updateCard(id, patch, activity);
+}
+async function archiveCard(id, arch=true){
+  await updateCard(id,{archived:arch}, arch?'Archiviert':'Wiederhergestellt');
+  if(arch) toast('Karte archiviert',{label:'Rückgängig',fn:()=>archiveCard(id,false)});
+}
+async function deleteCard(id){
+  const c=S.cards.find(x=>x.id===id); if(!c) return;
+  const copy={...c}; delete copy.id;
+  S.cards=S.cards.filter(x=>x.id!==id); renderMain(); closeDrawer();
+  await write(()=>dbDelete('cards',id));
+  toast('Karte gelöscht',{label:'Rückgängig',fn:()=>write(()=>dbSet('cards',{id,...copy}))});
+}
+async function duplicateCard(id){
+  const c=S.cards.find(x=>x.id===id); if(!c) return;
+  const copy={...c}; delete copy.id; delete copy.num; copy.comments=[]; copy.activity=[]; copy.title=c.title+' (Kopie)'; copy.checklist=(c.checklist||[]).map(i=>({...i,done:false}));
+  const nid = await addCard(c.columnId, copy.title, copy); openDrawer(nid);
+}
+
+/* ---------- Filters ---------- */
+function filterActive(){ const f=S.filter; return !!(f.q||f.labels.length||f.members.length||f.prio.length||f.due||f.hideDone); }
+function visibleCards(list){
+  const f=S.filter; const q=f.q.trim().toLowerCase(); const today=todayStr();
+  return list.filter(c=>{
+    if(c.archived) return false;
+    if(f.hideDone && c.done) return false;
+    if(q && !(c.title.toLowerCase().includes(q) || (c.desc||'').toLowerCase().includes(q) || ('#'+c.num).includes(q) || (c.checklist||[]).some(i=>i.text.toLowerCase().includes(q)))) return false;
+    if(f.labels.length && !f.labels.some(l=>(c.labels||[]).includes(l))) return false;
+    if(f.members.length && !f.members.some(m=>(c.members||[]).includes(m))) return false;
+    if(f.prio.length && !f.prio.includes(c.priority||'none')) return false;
+    if(f.due){
+      if(f.due==='none' && c.due) return false;
+      if(f.due==='overdue' && !(c.due && c.due<today && !c.done)) return false;
+      if(f.due==='today' && c.due!==today) return false;
+      if(f.due==='week' && !(c.due && c.due>=today && c.due<=addDays(today,7))) return false;
+    }
+    return true;
+  });
+}
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addDays(s,n){ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDate(s){ if(!s) return ''; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('de-DE',{day:'numeric',month:'short'}); }
+function fmtDT(s){ const d=new Date(s); return d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function dueClass(c){ if(!c.due) return ''; if(c.done) return 'done'; const t=todayStr(); if(c.due<t) return 'overdue'; if(c.due<=addDays(t,2)) return 'soon'; return ''; }
+
+/* ---------- Topbar ---------- */
+const ICON = {
+  search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  filter:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>',
+  gear:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  chev:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  sun:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+};
+function renderTopbar(){
+  const b=board(); const t=$('#topbar');
+  const fcount = S.filter.labels.length+S.filter.members.length+S.filter.prio.length+(S.filter.due?1:0)+(S.filter.hideDone?1:0);
+  t.innerHTML = `
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><span>Lanes</span></div>
+    <button class="boardpick" id="boardpick" title="Board wechseln"><span class="swatch" style="background:${b?.color||'var(--muted)'}"></span><span class="name">${b?esc(b.name):'Board wählen'}</span>${ICON.chev}</button>
+    <div class="search">${ICON.search}<input class="input" id="q" placeholder="Suchen …  ( / )" value="${esc(S.filter.q)}" ${b?'':'disabled'}></div>
+    <button class="btn ${fcount?'primary':''}" id="filterbtn" ${b?'':'disabled'}>${ICON.filter}<span class="hide-m">Filter</span>${fcount?`<span class="badge" style="${fcount?'background:var(--accent-ink);color:var(--accent)':''}">${fcount}</span>`:''}</button>
+    <div class="seg" id="viewseg">${['board','list','cal'].map(v=>`<button data-v="${v}" class="${S.view===v?'on':''}">${VIEW_NAMES[v]}</button>`).join('')}</div>
+    <div class="spacer"></div>
+    <span id="status" class="hide-m"><i></i>Live</span>
+    <button class="btn icon ghost" id="themebtn" title="Hell/Dunkel">${ICON.sun}</button>
+    <button class="btn icon ghost" id="menubtn" title="Board-Einstellungen">${ICON.gear}</button>`;
+  $('#boardpick').onclick = e=>boardMenu(e.currentTarget);
+  $('#q').oninput = e=>{ S.filter.q=e.target.value; renderMain(); };
+  $('#filterbtn').onclick = e=>filterMenu(e.currentTarget);
+  $$('#viewseg button').forEach(bt=>bt.onclick=()=>{ S.view=bt.dataset.v; LS.set('lanes.view',S.view); renderTopbar(); renderMain(); });
+  $('#themebtn').onclick = toggleTheme;
+  $('#menubtn').onclick = e=>settingsMenu(e.currentTarget);
+}
+
+/* ---------- Popovers ---------- */
+let popEl=null;
+function closePop(){ popEl?.remove(); popEl=null; document.removeEventListener('pointerdown',popOutside,true); }
+function popOutside(e){ if(popEl && !popEl.contains(e.target)) closePop(); }
+function pop(anchor, html, opts={}){
+  closePop();
+  popEl=document.createElement('div'); popEl.className='pop'; popEl.innerHTML=html; document.body.appendChild(popEl);
+  const r=anchor.getBoundingClientRect(); const pw=popEl.offsetWidth, ph=popEl.offsetHeight;
+  let x = opts.right? r.right-pw : r.left; let y=r.bottom+6;
+  x=Math.max(8,Math.min(x, innerWidth-pw-8)); if(y+ph>innerHeight-8) y=Math.max(8,r.top-ph-6);
+  popEl.style.left=x+'px'; popEl.style.top=y+'px';
+  setTimeout(()=>document.addEventListener('pointerdown',popOutside,true),0);
+  return popEl;
+}
+function boardMenu(a){
+  const p=pop(a, `<div class="sec"><h3>Boards</h3></div>
+    ${S.boards.map(b=>`<button class="bi ${b.id===S.boardId?'on':''}" data-id="${b.id}"><span class="swatch" style="background:${b.color}"></span><span class="grow" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.name)}</span></button>`).join('')||'<div class="sec muted">Noch keine Boards</div>'}
+    <hr><button class="mi" id="newboard">${ICON.plus} Neues Board</button>`);
+  $$('.bi',p).forEach(b=>b.onclick=()=>{ closePop(); subscribeBoard(b.dataset.id); });
+  $('#newboard',p).onclick=()=>{ closePop(); newBoardModal(); };
+}
+function filterMenu(a){
+  const b=board(); const f=S.filter;
+  const p=pop(a, `
+    <div class="sec"><h3>Labels</h3><div class="chips">${(b.labels||[]).map(l=>`<span class="chip tog ${f.labels.includes(l.id)?'on':''}" data-k="labels" data-v="${l.id}"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</span>`).join('')||'<span class="muted sm">Keine Labels</span>'}</div></div>
+    <div class="sec"><h3>Mitglieder</h3><div class="chips">${(b.members||[]).map(m=>`<span class="chip tog ${f.members.includes(m.id)?'on':''}" data-k="members" data-v="${m.id}"><span class="dot" style="background:${m.color}"></span>${esc(m.name)}</span>`).join('')||'<span class="muted sm">Keine Mitglieder</span>'}</div></div>
+    <div class="sec"><h3>Priorität</h3><div class="chips">${Object.entries(PRIOS).filter(([k])=>k!=='none').map(([k,v])=>`<span class="chip tog ${f.prio.includes(k)?'on':''}" data-k="prio" data-v="${k}">${v}</span>`).join('')}</div></div>
+    <div class="sec"><h3>Fälligkeit</h3><div class="chips">${[['overdue','Überfällig'],['today','Heute'],['week','Nächste 7 Tage'],['none','Ohne Datum']].map(([k,v])=>`<span class="chip tog ${f.due===k?'on':''}" data-k="due" data-v="${k}">${v}</span>`).join('')}</div></div>
+    <div class="sec"><label class="check"><input type="checkbox" id="hidedone" ${f.hideDone?'checked':''}> Erledigte ausblenden</label></div>
+    <hr><button class="mi" id="clearf">Filter zurücksetzen</button>`, {right:true});
+  $$('.chip.tog',p).forEach(c=>c.onclick=()=>{
+    const k=c.dataset.k, v=c.dataset.v;
+    if(k==='due'){ f.due = f.due===v?'':v; } else { const i=f[k].indexOf(v); i>=0?f[k].splice(i,1):f[k].push(v); }
+    renderTopbar(); renderMain(); filterMenu($('#filterbtn'));
+  });
+  $('#hidedone',p).onchange=e=>{ f.hideDone=e.target.checked; renderTopbar(); renderMain(); };
+  $('#clearf',p).onclick=()=>{ S.filter={q:'',labels:[],members:[],prio:[],due:'',hideDone:false}; closePop(); renderTopbar(); renderMain(); };
+}
+function settingsMenu(a){
+  const b=board();
+  const p=pop(a, `
+    ${b?`<div class="sec"><h3>${esc(b.name)}</h3></div>
+    <button class="mi" id="m-rename">Board umbenennen</button>
+    <button class="mi" id="m-labels">Labels verwalten</button>
+    <button class="mi" id="m-members">Mitglieder verwalten</button>
+    <button class="mi" id="m-archive">Archiv anzeigen <span class="k muted sm">${S.cards.filter(c=>c.archived).length}</span></button>
+    <button class="mi" id="m-stats">Statistik</button>
+    <hr>
+    <button class="mi" id="m-export">Board exportieren (JSON)</button>
+    <button class="mi" id="m-import">Board importieren</button>
+    <hr>`:''}
+    <button class="mi" id="m-newboard">${ICON.plus} Neues Board</button>
+    <button class="mi" id="m-pw">Passwort ändern</button>
+    <button class="mi" id="m-keys">Tastenkürzel</button>
+    <button class="mi" id="m-logout">Abmelden</button>
+    ${b?`<hr><button class="mi danger" id="m-delete">Board löschen</button>`:''}`, {right:true});
+  const on=(id,fn)=>{ const el=$(id,p); if(el) el.onclick=()=>{ closePop(); fn(); }; };
+  on('#m-rename', renameBoardModal); on('#m-labels', labelsModal); on('#m-members', membersModal);
+  on('#m-archive', archiveModal); on('#m-stats', statsModal); on('#m-export', exportBoard); on('#m-import', importModal);
+  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-keys', keysModal); on('#m-logout', logout);
+  on('#m-delete', async()=>{ if(await confirmModal('Board löschen', `„${esc(b.name)}“ mit allen ${S.cards.length} Karten endgültig löschen?`, 'Endgültig löschen')) deleteBoard(); });
+}
+
+/* ---------- Modals ---------- */
+function modal(html){
+  closeModal();
+  const w=document.createElement('div'); w.id='modalwrap'; w.innerHTML=`<div class="modal" role="dialog">${html}</div>`;
+  document.body.appendChild(w);
+  w.addEventListener('pointerdown',e=>{ if(e.target===w) closeModal(); });
+  return w;
+}
+function closeModal(){ $('#modalwrap')?.remove(); }
+function confirmModal(title, text, okLabel='OK', danger=true){
+  return new Promise(res=>{
+    const w=modal(`<h2>${title}</h2><p style="margin:0;color:var(--ink2)">${text}</p><div class="actions"><button class="btn" id="c-no">Abbrechen</button><button class="btn ${danger?'danger':'primary'}" id="c-ok">${okLabel}</button></div>`);
+    $('#c-no',w).onclick=()=>{ closeModal(); res(false); }; $('#c-ok',w).onclick=()=>{ closeModal(); res(true); };
+    $('#c-ok',w).focus();
+  });
+}
+function newBoardModal(){
+  let tpl='standard', color=BOARD_COLORS[S.boards.length%BOARD_COLORS.length];
+  const w=modal(`<h2>Neues Board</h2>
+    <div><label class="lbl" for="nb-name">Name</label><input class="input" id="nb-name" placeholder="z. B. Produktentwicklung" autofocus></div>
+    <div><label class="lbl">Vorlage</label><div class="tpl">${Object.entries(TEMPLATES).map(([k,t])=>`<button data-t="${k}" class="${k===tpl?'on':''}"><b>${t.name}</b><span>${t.desc}</span></button>`).join('')}</div></div>
+    <div><label class="lbl">Farbe</label><div class="colorpick">${BOARD_COLORS.map(c=>`<span class="swatch ${c===color?'on':''}" data-c="${c}" style="background:${c}"></span>`).join('')}</div></div>
+    <div class="actions"><button class="btn" id="nb-cancel">Abbrechen</button><button class="btn primary" id="nb-ok">Board anlegen</button></div>`);
+  $$('.tpl button',w).forEach(b=>b.onclick=()=>{ tpl=b.dataset.t; $$('.tpl button',w).forEach(x=>x.classList.toggle('on',x===b)); });
+  $$('.colorpick .swatch',w).forEach(s=>s.onclick=()=>{ color=s.dataset.c; $$('.colorpick .swatch',w).forEach(x=>x.classList.toggle('on',x===s)); });
+  $('#nb-cancel',w).onclick=closeModal;
+  const go=async()=>{ const n=$('#nb-name',w).value.trim(); if(!n) return $('#nb-name',w).focus(); closeModal(); await write(()=>createBoard(n,tpl,color),'Board angelegt'); };
+  $('#nb-ok',w).onclick=go; $('#nb-name',w).onkeydown=e=>{ if(e.key==='Enter') go(); };
+  setTimeout(()=>$('#nb-name',w).focus(),30);
+}
+function renameBoardModal(){
+  const b=board();
+  const w=modal(`<h2>Board bearbeiten</h2>
+    <div><label class="lbl" for="rb-name">Name</label><input class="input" id="rb-name" value="${esc(b.name)}"></div>
+    <div><label class="lbl">Farbe</label><div class="colorpick">${BOARD_COLORS.map(c=>`<span class="swatch ${c===b.color?'on':''}" data-c="${c}" style="background:${c}"></span>`).join('')}</div></div>
+    <div class="actions"><button class="btn" id="rb-cancel">Abbrechen</button><button class="btn primary" id="rb-ok">Speichern</button></div>`);
+  let color=b.color;
+  $$('.colorpick .swatch',w).forEach(s=>s.onclick=()=>{ color=s.dataset.c; $$('.colorpick .swatch',w).forEach(x=>x.classList.toggle('on',x===s)); });
+  $('#rb-cancel',w).onclick=closeModal;
+  $('#rb-ok',w).onclick=async()=>{ const n=$('#rb-name',w).value.trim(); if(!n) return; closeModal(); await write(()=>updateBoard({name:n,color})); };
+}
+function labelsModal(){
+  const b=board(); const labels=JSON.parse(JSON.stringify(b.labels||[]));
+  const draw=()=>{
+    const w=modal(`<h2>Labels</h2><div id="lrows">${labels.map((l,i)=>`<div class="lrow"><span class="swatch" data-i="${i}" style="background:${l.color};width:26px;height:26px;border-radius:7px;flex:none"></span><input class="input" data-i="${i}" value="${esc(l.name)}"><button class="btn icon ghost danger" data-del="${i}" title="Löschen">${ICON.x}</button></div>`).join('')}</div>
+      <button class="btn sm" id="l-add">${ICON.plus} Label hinzufügen</button>
+      <div class="actions"><button class="btn" id="l-cancel">Abbrechen</button><button class="btn primary" id="l-ok">Speichern</button></div>`);
+    $$('#lrows input',w).forEach(i=>i.oninput=e=>labels[+e.target.dataset.i].name=e.target.value);
+    $$('#lrows .swatch',w).forEach(s=>s.onclick=()=>{ const l=labels[+s.dataset.i]; l.color=LABEL_COLORS[(LABEL_COLORS.indexOf(l.color)+1)%LABEL_COLORS.length]; s.style.background=l.color; });
+    $$('[data-del]',w).forEach(x=>x.onclick=()=>{ labels.splice(+x.dataset.del,1); draw(); });
+    $('#l-add',w).onclick=()=>{ labels.push({id:uid(),name:'Neues Label',color:LABEL_COLORS[labels.length%LABEL_COLORS.length]}); draw(); setTimeout(()=>{ const ins=$$('#lrows input'); ins[ins.length-1]?.select(); },20); };
+    $('#l-cancel',w).onclick=closeModal;
+    $('#l-ok',w).onclick=async()=>{ closeModal(); await write(()=>updateBoard({labels:labels.filter(l=>l.name.trim())}),'Labels gespeichert'); };
+  }; draw();
+}
+function membersModal(){
+  const b=board(); const members=JSON.parse(JSON.stringify(b.members||[]));
+  const draw=()=>{
+    const w=modal(`<h2>Mitglieder</h2><p class="muted sm" style="margin:-6px 0 0">Namen, die Karten zugewiesen werden können – z. B. Teammitglieder oder Rollen.</p><div id="mrows">${members.map((m,i)=>`<div class="lrow"><span class="avatar" style="background:${m.color}">${esc(initials(m.name))}</span><input class="input" data-i="${i}" value="${esc(m.name)}"><button class="btn icon ghost danger" data-del="${i}">${ICON.x}</button></div>`).join('')}</div>
+      <button class="btn sm" id="m-add">${ICON.plus} Mitglied hinzufügen</button>
+      <div class="actions"><button class="btn" id="m-cancel">Abbrechen</button><button class="btn primary" id="m-ok">Speichern</button></div>`);
+    $$('#mrows input',w).forEach(i=>i.oninput=e=>{ members[+e.target.dataset.i].name=e.target.value; e.target.previousElementSibling.textContent=initials(e.target.value); });
+    $$('[data-del]',w).forEach(x=>x.onclick=()=>{ members.splice(+x.dataset.del,1); draw(); });
+    $('#m-add',w).onclick=()=>{ members.push({id:uid(),name:'',color:LABEL_COLORS[(members.length+4)%LABEL_COLORS.length]}); draw(); setTimeout(()=>{ const ins=$$('#mrows input'); ins[ins.length-1]?.focus(); },20); };
+    $('#m-cancel',w).onclick=closeModal;
+    $('#m-ok',w).onclick=async()=>{ closeModal(); await write(()=>updateBoard({members:members.filter(m=>m.name.trim())}),'Mitglieder gespeichert'); };
+  }; draw();
+}
+function initials(n){ return (n||'').trim().split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase()||'?'; }
+function archiveModal(){
+  const arch=S.cards.filter(c=>c.archived);
+  const w=modal(`<h2>Archiv</h2>${arch.length?`<div class="cl">${arch.map(c=>`<div class="cli"><span class="muted sm tabular">#${c.num}</span><span class="grow" style="padding:2px 4px">${esc(c.title)}</span><button class="btn sm" data-r="${c.id}">Wiederherstellen</button><button class="btn sm icon ghost danger" data-d="${c.id}">${ICON.x}</button></div>`).join('')}</div>`:'<p class="muted">Keine archivierten Karten.</p>'}
+    <div class="actions"><button class="btn" id="a-close">Schließen</button></div>`);
+  $$('[data-r]',w).forEach(b=>b.onclick=async()=>{ await archiveCard(b.dataset.r,false); archiveModal(); });
+  $$('[data-d]',w).forEach(b=>b.onclick=async()=>{ closeModal(); await deleteCard(b.dataset.d); });
+  $('#a-close',w).onclick=closeModal;
+}
+function statsModal(){
+  const live=S.cards.filter(c=>!c.archived); const t=todayStr(); const wk=addDays(t,-7);
+  const done=live.filter(c=>c.done).length, overdue=live.filter(c=>c.due&&c.due<t&&!c.done).length, week=live.filter(c=>c.updatedAt>=wk&&c.done).length, created=live.filter(c=>c.createdAt>=wk).length;
+  const max=Math.max(1,...S.columns.map(c=>colCards(c.id).length));
+  modal(`<h2>Statistik</h2>
+    <div class="dgrid">${[['Offen',live.length-done],['Erledigt',done],['Überfällig',overdue],['Erledigt (7 Tage)',week],['Neu (7 Tage)',created]].map(([k,v])=>`<div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px"><div class="sm muted">${k}</div><div class="tabular" style="font-family:var(--display);font-size:24px;font-weight:600">${v}</div></div>`).join('')}</div>
+    <div class="sec"><h3>Karten je Spalte</h3>${S.columns.map(c=>{const n=colCards(c.id).length;return `<div class="row" style="margin:4px 0"><span style="width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="sm">${esc(c.name)}</span><div class="progress"><i style="width:${n/max*100}%;background:${c.wip&&n>c.wip?'var(--crit)':'var(--accent)'}"></i></div><span class="sm tabular muted" style="width:44px;text-align:right">${n}${c.wip?' / '+c.wip:''}</span></div>`;}).join('')}</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Schließen</button></div>`);
+}
+function keysModal(){
+  modal(`<h2>Tastenkürzel</h2><div class="cl">${[['N','Neue Karte in der ersten Spalte'],['/','Suche fokussieren'],['F','Filter öffnen'],['1 / 2 / 3','Board · Liste · Kalender'],['Esc','Karte oder Menü schließen'],['Strg + Enter','Beim Tippen: Karte anlegen / Kommentar senden']].map(([k,v])=>`<div class="cli"><kbd style="min-width:70px;text-align:center">${k}</kbd><span>${v}</span></div>`).join('')}</div><div class="actions"><button class="btn" onclick="closeModal()">Schließen</button></div>`);
+}
+function changePwModal(){
+  const w=modal(`<h2>Passwort ändern</h2><form id="pwf" style="display:flex;flex-direction:column;gap:12px">
+    <div><label class="lbl" for="p0">Aktuelles Passwort</label><input class="input" id="p0" type="password" autocomplete="current-password" required></div>
+    <div><label class="lbl" for="p1">Neues Passwort</label><input class="input" id="p1" type="password" autocomplete="new-password" minlength="4" required></div>
+    <div><label class="lbl" for="p2">Neues Passwort wiederholen</label><input class="input" id="p2" type="password" autocomplete="new-password" required></div>
+    <div class="err" id="pwerr"></div>
+    <div class="actions"><button class="btn" type="button" id="p-cancel">Abbrechen</button><button class="btn primary" type="submit">Ändern</button></div></form>`);
+  $('#p-cancel',w).onclick=closeModal;
+  $('#pwf',w).onsubmit=async e=>{
+    e.preventDefault(); const err=$('#pwerr',w);
+    const {error:e0}=await sb.auth.signInWithPassword({email:CONFIG.LOGIN_EMAIL,password:$('#p0',w).value});
+    if(e0) return err.textContent='Aktuelles Passwort ist falsch.';
+    if($('#p1',w).value!==$('#p2',w).value) return err.textContent='Die neuen Passwörter stimmen nicht überein.';
+    const {error}=await sb.auth.updateUser({password:$('#p1',w).value});
+    if(error) return err.textContent='Ändern fehlgeschlagen: '+error.message;
+    toast('Passwort geändert'); closeModal();
+  };
+}
+function exportBoard(){
+  const b=board(); const data={format:'lanes/1', exportedAt:now(), board:{...b}, columns:S.columns, cards:S.cards};
+  const json=JSON.stringify(data,null,2);
+  const fn=`lanes_${b.name.replace(/[^\w\-]+/g,'_')}_${now().slice(0,16).replace('T','_').replace(':','')}.json`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([json],{type:'application/json'})); a.download=fn; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000); toast('Export gespeichert');
+}
+function importModal(){
+  const w=modal(`<h2>Board importieren</h2><p class="muted sm" style="margin:-6px 0 0">JSON aus einem Lanes-Export oder eine Trello-Export-Datei (JSON) einfügen bzw. auswählen. Es wird ein neues Board angelegt.</p>
+    <input type="file" id="impfile" accept="application/json,.json" class="input">
+    <textarea class="textarea" id="imp" placeholder="… oder JSON hier einfügen" style="min-height:140px;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+    <div class="err" id="imperr"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Abbrechen</button><button class="btn primary" id="imp-ok">Importieren</button></div>`);
+  $('#impfile',w).onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(t=>$('#imp',w).value=t); };
+  $('#imp-ok',w).onclick=async()=>{
+    let data; try{ data=JSON.parse($('#imp',w).value); }catch{ return $('#imperr',w).textContent='Kein gültiges JSON.'; }
+    closeModal();
+    await write(async()=>{
+      if(data.format==='lanes/1'){ await importLanes(data); }
+      else if(data.lists && data.cards){ await importTrello(data); }
+      else throw new Error('Unbekanntes Format');
+    },'Import abgeschlossen');
+  };
+}
+async function importLanes(d){
+  const bid=uid(); const b={...d.board}; delete b.id; b.order=nextOrder(S.boards); b.name=b.name+' (Import)'; b.archived=false;
+  await dbSet('boards',{id:bid,...b});
+  const colMap={};
+  for(const c of d.columns){ const nid=uid(); colMap[c.id]=nid; const cc={...c}; delete cc.id; cc.boardId=bid; await dbSet('columns',{id:nid,...cc}); }
+  for(const c of d.cards){ const cc={...c}; delete cc.id; cc.boardId=bid; cc.columnId=colMap[c.columnId]||Object.values(colMap)[0]; if(!cc.columnId) continue; await dbSet('cards',{id:uid(),...cc}); }
+  subscribeBoard(bid);
+}
+async function importTrello(d){
+  const bid=uid(); const labels=(d.labels||[]).filter(l=>l.name).map(l=>({id:l.id,name:l.name,color:trelloColor(l.color)}));
+  await dbSet('boards',{id:bid, name:(d.name||'Trello')+' (Import)', color:BOARD_COLORS[1], order:nextOrder(S.boards), labels, members:(d.members||[]).map(m=>({id:m.id,name:m.fullName||m.username,color:LABEL_COLORS[5]})), nextNum:1, createdAt:now(), archived:false});
+  const colMap={}; let o=1000;
+  for(const l of (d.lists||[]).filter(l=>!l.closed).sort((a,b)=>a.pos-b.pos)){ const nid=uid(); colMap[l.id]=nid; await dbSet('columns',{id:nid, boardId:bid,name:l.name,order:o,wip:0,collapsed:false,done:/erledigt|done|fertig/i.test(l.name)}); o+=1000; }
+  let num=1;
+  const checklists=Object.fromEntries((d.checklists||[]).map(c=>[c.id,c]));
+  for(const c of (d.cards||[]).sort((a,b)=>a.pos-b.pos)){
+    const columnId=colMap[c.idList]; if(!columnId) continue;
+    const cl=(c.idChecklists||[]).flatMap(id=>(checklists[id]?.checkItems||[]).map(i=>({id:uid(),text:i.name,done:i.state==='complete'})));
+    await dbSet('cards',{id:uid(), boardId:bid,columnId,order:c.pos||num*1000,num:num++,title:c.name,desc:c.desc||'',labels:(c.idLabels||[]).filter(id=>labels.find(l=>l.id===id)),members:c.idMembers||[],priority:'none',due:c.due?c.due.slice(0,10):'',cover:'',checklist:cl,comments:[],activity:[act('Aus Trello importiert')],archived:!!c.closed,done:!!c.dueComplete,createdAt:now(),updatedAt:now()});
+  }
+  await dbUpdate('boards',bid,{nextNum:num});
+  subscribeBoard(bid);
+}
+function trelloColor(c){ return {red:'#D9534F',orange:'#E8863B',yellow:'#D9B12D',green:'#3FA55C',blue:'#3B7DD8',purple:'#8A5CD6',pink:'#D65C9E',sky:'#2A9D8F',lime:'#3FA55C',black:'#8B95A5'}[(c||'').split('_')[0]]||'#8B95A5'; }
+
+/* ---------- Main render ---------- */
+function renderMain(){
+  const m=$('#main'); if(!S.ready) return;
+  const b=board();
+  if(!b){
+    m.innerHTML=`<div class="empty"><h2>${S.boards.length?'Board wählen':'Willkommen bei Lanes'}</h2><p>${S.boards.length?'Wähle oben ein Board aus.':'Lege dein erstes Board an – mit einer Vorlage oder leer.'}</p><button class="btn primary" id="e-new">${ICON.plus} Neues Board</button></div>`;
+    $('#e-new').onclick=newBoardModal; return;
+  }
+  if(S.view==='board') renderBoard(m); else if(S.view==='list') renderList(m); else renderCal(m);
+}
+function cardHTML(c){
+  const b=board(); const labels=(c.labels||[]).map(id=>(b.labels||[]).find(l=>l.id===id)).filter(Boolean);
+  const members=(c.members||[]).map(id=>(b.members||[]).find(m=>m.id===id)).filter(Boolean);
+  const cl=c.checklist||[]; const cldone=cl.filter(i=>i.done).length;
+  const dc=dueClass(c);
+  return `<div class="card ${c.done?'done':''}" data-id="${c.id}" tabindex="0" role="button">
+    ${c.cover?`<div class="cover" style="background:${c.cover}"></div>`:''}
+    <div class="cbody">
+      ${labels.length?`<div class="labels">${labels.map(l=>`<span style="background:${l.color}" title="${esc(l.name)}"></span>`).join('')}</div>`:''}
+      <div class="title">${esc(c.title)}</div>
+      <div class="meta">
+        <span class="num">#${c.num}</span>
+        ${c.priority&&c.priority!=='none'?(c.priority==='urgent'?`<span class="pill urgent">Dringend</span>`:`<span class="prio ${c.priority}" title="${PRIOS[c.priority]}"><i></i><i></i><i></i></span>`):''}
+        ${c.due?`<span class="pill ${dc}">${dc==='overdue'?'⚠ ':''}${fmtDate(c.due)}</span>`:''}
+        ${cl.length?`<span class="pill ${cldone===cl.length?'checkdone':''}">☑ ${cldone}/${cl.length}</span>`:''}
+        ${(c.desc||'').trim()?`<span title="Beschreibung">≡</span>`:''}
+        ${(c.comments||[]).length?`<span title="Kommentare">💬 ${c.comments.length}</span>`:''}
+        ${members.length?`<span class="avatars">${members.map(m=>`<span class="avatar" style="background:${m.color}" title="${esc(m.name)}">${esc(initials(m.name))}</span>`).join('')}</span>`:''}
+      </div>
+    </div></div>`;
+}
+function renderBoard(m){
+  // preserve column scroll
+  $$('.colbody',m).forEach(el=>S.colScroll[el.dataset.col]=el.scrollTop);
+  const addOpen = $('.coladd textarea',m)?.closest('.col')?.dataset.id; const addVal=$('.coladd textarea',m)?.value;
+  const html = `<div id="board">${S.columns.map(col=>{
+    const all=colCards(col.id); const cards=visibleCards(all); const n=all.length;
+    const wipCls = col.wip? (n>col.wip?'over-wip':n===col.wip?'at-wip':'') : '';
+    return `<section class="col ${col.collapsed?'collapsed':''} ${wipCls} ${col.done?'done-col':''}" data-id="${col.id}">
+      <div class="colhead">
+        <span class="vname">${esc(col.name)} · ${n}</span>
+        <span class="cname" spellcheck="false" data-id="${col.id}" title="Doppelklick zum Umbenennen">${esc(col.name)}</span>
+        <span class="count" title="${col.wip?'WIP-Limit '+col.wip:'Karten'}">${n}${col.wip?'/'+col.wip:''}</span>
+        <button class="btn icon ghost sm colmenu" data-id="${col.id}" title="Spaltenmenü" style="width:28px;height:28px">${ICON.dots}</button>
+      </div>
+      <div class="colbody" data-col="${col.id}">${cards.map(cardHTML).join('')}</div>
+      <div class="coladd" data-col="${col.id}">${addOpen===col.id?`<textarea placeholder="Titel der Karte …">${esc(addVal||'')}</textarea><div class="row" style="margin-top:6px"><button class="btn primary sm add-ok">Hinzufügen</button><button class="btn ghost sm add-cancel">Abbrechen</button></div>`:`<button class="add-open">${ICON.plus} Karte hinzufügen</button>`}</div>
+    </section>`;}).join('')}
+    <div class="addcol"><button id="addcol">${ICON.plus} Spalte hinzufügen</button></div>
+  </div>`;
+  m.innerHTML=html;
+  const bd=$('#board',m);
+  $$('.colbody',bd).forEach(el=>{ if(S.colScroll[el.dataset.col]) el.scrollTop=S.colScroll[el.dataset.col]; });
+  // events
+  $$('.cname',bd).forEach(el=>{
+    const startEdit=()=>{ el.contentEditable='true'; el.focus(); const r=document.createRange(); r.selectNodeContents(el); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); };
+    el.ondblclick=startEdit;
+    el.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ el.textContent=S.columns.find(c=>c.id===el.dataset.id).name; el.blur(); } };
+    el.onblur=()=>{ el.contentEditable='false'; const n=el.textContent.trim(); const col=S.columns.find(c=>c.id===el.dataset.id); if(n && n!==col.name) write(()=>updateColumn(col.id,{name:n})); else el.textContent=col.name; };
+    el.onpointerdown=e=>{ if(el.isContentEditable) e.stopPropagation(); };
+  });
+  $$('.colmenu',bd).forEach(b=>b.onclick=e=>{ e.stopPropagation(); columnMenu(b, b.dataset.id); });
+  $$('.colmenu',bd).forEach(b=>b.onpointerdown=e=>e.stopPropagation());
+  $$('.col.collapsed .colhead',bd).forEach(h=>h.onclick=()=>write(()=>updateColumn(h.closest('.col').dataset.id,{collapsed:false})));
+  $$('.add-open',bd).forEach(b=>b.onclick=()=>openAdd(b.closest('.coladd')));
+  $$('.coladd textarea',bd).forEach(t=>bindAdd(t.closest('.coladd')));
+  $$('.card',bd).forEach(c=>{ c.onclick=()=>{ if(!drag.moved) openDrawer(c.dataset.id); }; c.onkeydown=e=>{ if(e.key==='Enter') openDrawer(c.dataset.id); }; });
+  $('#addcol',bd).onclick=()=>{
+    const w=$('.addcol',bd); w.innerHTML=`<input placeholder="Name der Spalte" autofocus>`; const i=$('input',w); i.focus();
+    const commit=()=>{ const n=i.value.trim(); if(n) write(()=>addColumn(n)); else renderMain(); };
+    i.onkeydown=e=>{ if(e.key==='Enter') commit(); if(e.key==='Escape') renderMain(); }; i.onblur=commit;
+  };
+  if(!S.columns.length){
+    bd.insertAdjacentHTML('afterbegin',`<div class="empty" style="margin:auto 0;width:300px"><h2>Noch keine Spalten</h2><p>Lege rechts die erste Spalte an, z. B. „To Do“.</p></div>`);
+  }
+}
+function openAdd(wrap){
+  wrap.innerHTML=`<textarea placeholder="Titel der Karte …"></textarea><div class="row" style="margin-top:6px"><button class="btn primary sm add-ok">Hinzufügen</button><button class="btn ghost sm add-cancel">Abbrechen</button></div>`;
+  bindAdd(wrap); $('textarea',wrap).focus();
+}
+function bindAdd(wrap){
+  const t=$('textarea',wrap); const colId=wrap.dataset.col;
+  const commit=async(keep)=>{ const v=t.value.trim(); if(!v){ if(!keep){ wrap.innerHTML=''; renderMain(); } return; } t.value=''; await write(()=>addCard(colId,v)); if(keep){ const nt=$(`.coladd[data-col="${colId}"] textarea`); nt?.focus(); } };
+  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); commit(true); } if(e.key==='Escape'){ e.stopPropagation(); wrap.innerHTML=''; renderMain(); } };
+  $('.add-ok',wrap).onclick=()=>commit(true);
+  $('.add-cancel',wrap).onclick=()=>{ wrap.innerHTML=''; renderMain(); };
+  t.onpointerdown=e=>e.stopPropagation();
+}
+function columnMenu(a, id){
+  const col=S.columns.find(c=>c.id===id);
+  const p=pop(a,`
+    <div class="sec"><h3>${esc(col.name)}</h3></div>
+    <div class="sec"><label class="lbl" for="wip">WIP-Limit (0 = keins)</label><input class="input" id="wip" type="number" min="0" value="${col.wip||0}"></div>
+    <div class="sec"><label class="check"><input type="checkbox" id="donecol" ${col.done?'checked':''}> Karten hier gelten als erledigt</label></div>
+    <hr>
+    <button class="mi" id="c-rename">Umbenennen</button>
+    <button class="mi" id="c-collapse">${col.collapsed?'Ausklappen':'Einklappen'}</button>
+    <button class="mi" id="c-archive">Alle Karten archivieren</button>
+    <button class="mi" id="c-sortdue">Nach Fälligkeit sortieren</button>
+    <button class="mi" id="c-sortprio">Nach Priorität sortieren</button>
+    <hr><button class="mi danger" id="c-del">Spalte löschen</button>`, {right:true});
+  $('#wip',p).onchange=e=>write(()=>updateColumn(id,{wip:Math.max(0,+e.target.value||0)}));
+  $('#donecol',p).onchange=e=>write(()=>updateColumn(id,{done:e.target.checked}));
+  $('#c-rename',p).onclick=()=>{ closePop(); $(`.cname[data-id="${id}"]`)?.dispatchEvent(new Event('dblclick')); };
+  $('#c-collapse',p).onclick=()=>{ closePop(); write(()=>updateColumn(id,{collapsed:!col.collapsed})); };
+  $('#c-archive',p).onclick=async()=>{ closePop(); const cs=colCards(id); if(!cs.length) return; if(await confirmModal('Karten archivieren',`${cs.length} Karte(n) in „${esc(col.name)}“ archivieren?`,'Archivieren',false)){ for(const c of cs) await write(()=>dbUpdate('cards',c.id,{archived:true,updatedAt:now()})); toast(`${cs.length} Karten archiviert`); } };
+  const resort=async(keyFn)=>{ closePop(); const cs=[...colCards(id)].sort(keyFn); let o=1000; for(const c of cs){ if(c.order!==o){ c.order=o; await write(()=>dbUpdate('cards',c.id,{order:o})); } o+=1000; } renderMain(); };
+  $('#c-sortdue',p).onclick=()=>resort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  const pr={urgent:0,high:1,medium:2,low:3,none:4};
+  $('#c-sortprio',p).onclick=()=>resort((a,b)=>pr[a.priority||'none']-pr[b.priority||'none']);
+  $('#c-del',p).onclick=()=>{ closePop(); write(()=>deleteColumn(id)); };
+}
+
+/* ---------- List view ---------- */
+function renderList(m){
+  const b=board(); const cards=visibleCards(S.cards); const s=S.listSort;
+  const pr={urgent:0,high:1,medium:2,low:3,none:4};
+  const colIdx=Object.fromEntries(S.columns.map((c,i)=>[c.id,i]));
+  const sorters={num:(a,b)=>a.num-b.num, title:(a,b)=>a.title.localeCompare(b.title,'de'), col:(a,b)=>(colIdx[a.columnId]??99)-(colIdx[b.columnId]??99)||a.order-b.order, prio:(a,b)=>pr[a.priority||'none']-pr[b.priority||'none'], due:(a,b)=>(a.due||'9999').localeCompare(b.due||'9999'), upd:(a,b)=>b.updatedAt.localeCompare(a.updatedAt), order:(a,b)=>(colIdx[a.columnId]??99)-(colIdx[b.columnId]??99)||a.order-b.order};
+  cards.sort((a,b)=>sorters[s.k](a,b)*s.d);
+  const th=(k,l)=>`<th data-k="${k}" class="${s.k===k?'sorted':''} ${s.d<0?'desc':''}">${l}</th>`;
+  const rows=[]; let lastCol=null;
+  for(const c of cards){
+    if(S.listGroup && s.k==='order' && c.columnId!==lastCol){ lastCol=c.columnId; const col=S.columns.find(x=>x.id===c.columnId); rows.push(`<tr class="grouphead"><td colspan="7">${esc(col?.name||'–')} <span class="muted sm">· ${colCards(c.columnId).length}</span></td></tr>`); }
+    const col=S.columns.find(x=>x.id===c.columnId); const labels=(c.labels||[]).map(id=>(b.labels||[]).find(l=>l.id===id)).filter(Boolean); const cl=c.checklist||[]; const dc=dueClass(c);
+    const members=(c.members||[]).map(id=>(b.members||[]).find(x=>x.id===id)).filter(Boolean);
+    rows.push(`<tr data-id="${c.id}"><td class="muted tabular sm">#${c.num}</td><td style="${c.done?'color:var(--muted);text-decoration:line-through':''}"><span style="font-weight:500">${esc(c.title)}</span>${members.length?` <span class="muted sm">· ${members.map(x=>esc(x.name)).join(', ')}</span>`:''}</td><td class="sm">${esc(col?.name||'')}</td><td>${labels.map(l=>`<span class="lchip" style="background:${l.color}">${esc(l.name)}</span>`).join('')}</td><td class="sm">${c.priority&&c.priority!=='none'?`<span class="row" style="gap:5px"><span class="prio ${c.priority}"><i></i><i></i><i></i></span>${PRIOS[c.priority]}</span>`:'<span class="muted">–</span>'}</td><td>${c.due?`<span class="pill ${dc}">${fmtDate(c.due)}</span>`:'<span class="muted">–</span>'}</td><td class="sm tabular">${cl.length?`${cl.filter(i=>i.done).length}/${cl.length}`:'<span class="muted">–</span>'}</td></tr>`);
+  }
+  m.innerHTML=`<div id="list"><div class="row" style="margin-bottom:10px"><span class="muted sm">${cards.length} Karte(n)${filterActive()?' · gefiltert':''}</span><span class="spacer"></span><label class="check sm"><input type="checkbox" id="grp" ${S.listGroup?'checked':''}> Nach Spalte gruppieren</label></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr>${th('num','#')}${th('title','Titel')}${th('col','Spalte')}<th>Labels</th>${th('prio','Priorität')}${th('due','Fällig')}<th>Checkliste</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="7" class="muted" style="text-align:center;padding:30px">Keine Karten</td></tr>'}</tbody></table></div></div>`;
+  $$('th[data-k]',m).forEach(h=>h.onclick=()=>{ const k=h.dataset.k; if(S.listSort.k===k) S.listSort.d*=-1; else S.listSort={k,d:1}; renderMain(); });
+  $$('tbody tr[data-id]',m).forEach(r=>r.onclick=()=>openDrawer(r.dataset.id));
+  $('#grp',m).onchange=e=>{ S.listGroup=e.target.checked; if(S.listGroup) S.listSort={k:'order',d:1}; renderMain(); };
+}
+
+/* ---------- Calendar ---------- */
+function renderCal(m){
+  if(!S.calMonth){ const d=new Date(); S.calMonth=[d.getFullYear(),d.getMonth()]; }
+  const [y,mo]=S.calMonth; const first=new Date(y,mo,1); const startDow=(first.getDay()+6)%7; const days=new Date(y,mo+1,0).getDate();
+  const cards=visibleCards(S.cards).filter(c=>c.due); const byDay={}; cards.forEach(c=>(byDay[c.due]=byDay[c.due]||[]).push(c));
+  const t=todayStr(); const cells=[];
+  const start=new Date(y,mo,1-startDow);
+  for(let i=0;i<42;i++){ const d=new Date(start); d.setDate(start.getDate()+i); const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(i>=35 && d.getMonth()!==mo) break;
+    cells.push(`<div class="day ${d.getMonth()!==mo?'other':''} ${key===t?'today':''}"><span class="d">${d.getDate()}</span>${(byDay[key]||[]).map(c=>`<div class="calcard ${c.done?'dn':(key<t?'od':'')}" data-id="${c.id}" title="${esc(c.title)}">${esc(c.title)}</div>`).join('')}</div>`); }
+  const noDate=visibleCards(S.cards).filter(c=>!c.due&&!c.done).length;
+  m.innerHTML=`<div id="cal"><div class="calhead"><button class="btn icon" id="cprev">‹</button><button class="btn icon" id="cnext">›</button><h2>${first.toLocaleDateString('de-DE',{month:'long',year:'numeric'})}</h2><button class="btn ghost sm" id="ctoday">Heute</button><span class="spacer"></span><span class="muted sm">${noDate} Karte(n) ohne Datum</span></div>
+    <div class="calwrap"><div class="calgrid">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div class="dn">${d}</div>`).join('')}${cells.join('')}</div></div></div>`;
+  $('#cprev',m).onclick=()=>{ S.calMonth=[mo===0?y-1:y, (mo+11)%12]; renderMain(); };
+  $('#cnext',m).onclick=()=>{ S.calMonth=[mo===11?y+1:y, (mo+1)%12]; renderMain(); };
+  $('#ctoday',m).onclick=()=>{ S.calMonth=null; renderMain(); };
+  $$('.calcard',m).forEach(c=>c.onclick=()=>openDrawer(c.dataset.id));
+}
+
+/* ---------- Drawer ---------- */
+function openDrawer(id){
+  S.openCard=id; const d=$('#drawer'), s=$('#scrim'); d.hidden=false; s.hidden=false;
+  requestAnimationFrame(()=>{ d.classList.add('show'); s.classList.add('show'); });
+  s.onclick=closeDrawer; renderDrawer();
+}
+function closeDrawer(){
+  const d=$('#drawer'), s=$('#scrim'); d.classList.remove('show'); s.classList.remove('show'); S.openCard=null;
+  setTimeout(()=>{ if(!S.openCard){ d.hidden=true; s.hidden=true; d.innerHTML=''; } },200);
+}
+function refreshDrawer(){
+  if(!S.openCard) return;
+  const d=$('#drawer'); if(d.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  renderDrawer();
+}
+function linkify(t){ return esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+function renderDrawer(){
+  const c=S.cards.find(x=>x.id===S.openCard); const d=$('#drawer'); const b=board();
+  if(!c){ closeDrawer(); return; }
+  const cl=c.checklist||[]; const cldone=cl.filter(i=>i.done).length; const pct=cl.length?Math.round(cldone/cl.length*100):0;
+  d.innerHTML=`
+    <div class="dhead"><span class="num">#${c.num}</span>
+      <select class="select" id="d-col" style="width:auto;max-width:200px;padding:5px 8px">${S.columns.map(x=>`<option value="${x.id}" ${x.id===c.columnId?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+      <label class="check sm" style="margin-left:4px"><input type="checkbox" id="d-done" ${c.done?'checked':''}> Erledigt</label>
+      <span class="spacer"></span><button class="btn icon ghost" id="d-close" title="Schließen (Esc)">${ICON.x}</button></div>
+    <div class="dbody">
+      ${c.cover?`<div style="height:48px;border-radius:10px;background:${c.cover};margin:-4px 0 -6px"></div>`:''}
+      <textarea class="dtitle" id="d-title" rows="1">${esc(c.title)}</textarea>
+      <div class="dgrid">
+        <div><label class="lbl" for="d-due">Fällig am</label><input class="input" type="date" id="d-due" value="${c.due||''}"></div>
+        <div><label class="lbl" for="d-prio">Priorität</label><select class="select" id="d-prio">${Object.entries(PRIOS).map(([k,v])=>`<option value="${k}" ${(c.priority||'none')===k?'selected':''}>${v}</option>`).join('')}</select></div>
+      </div>
+      <div class="sec"><h3>Labels <button class="btn sm ghost" id="d-labels-manage">Bearbeiten</button></h3><div class="chips">${(b.labels||[]).map(l=>`<span class="chip tog ${(c.labels||[]).includes(l.id)?'on':''}" data-l="${l.id}"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</span>`).join('')||'<span class="muted sm">Noch keine Labels – über „Bearbeiten“ anlegen.</span>'}</div></div>
+      <div class="sec"><h3>Mitglieder <button class="btn sm ghost" id="d-members-manage">Bearbeiten</button></h3><div class="chips">${(b.members||[]).map(m=>`<span class="chip tog ${(c.members||[]).includes(m.id)?'on':''}" data-m="${m.id}"><span class="avatar" style="background:${m.color};width:18px;height:18px;font-size:9px">${esc(initials(m.name))}</span>${esc(m.name)}</span>`).join('')||'<span class="muted sm">Noch keine Mitglieder – über „Bearbeiten“ anlegen.</span>'}</div></div>
+      <div class="sec"><h3>Farbe</h3><div class="swatches"><span class="swatch none ${!c.cover?'on':''}" data-c=""></span>${LABEL_COLORS.map(col=>`<span class="swatch ${c.cover===col?'on':''}" data-c="${col}" style="background:${col}"></span>`).join('')}</div></div>
+      <div class="sec"><h3>Beschreibung</h3><div id="d-desc-view" class="desc-view" ${c.desc?'':''}>${linkify(c.desc||'')}</div><textarea class="textarea" id="d-desc" hidden>${esc(c.desc||'')}</textarea></div>
+      <div class="sec"><h3>Checkliste ${cl.length?`<span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${cldone}/${cl.length}</span><div class="progress" style="max-width:140px"><i style="width:${pct}%"></i></div>`:''}</h3>
+        <div class="cl" id="d-cl">${cl.map(i=>`<div class="cli ${i.done?'done':''}" data-i="${i.id}"><input type="checkbox" ${i.done?'checked':''}><input class="t" value="${esc(i.text)}"><button class="x" title="Entfernen">${ICON.x}</button></div>`).join('')}</div>
+        <div class="row" style="margin-top:6px"><input class="input" id="d-cl-new" placeholder="Punkt hinzufügen … (Enter)"></div></div>
+      <div class="sec"><h3>Kommentare</h3>
+        <div class="row" style="align-items:flex-start"><textarea class="textarea" id="d-comment" placeholder="Kommentar schreiben … (Strg+Enter)" style="min-height:56px"></textarea><button class="btn primary" id="d-comment-ok">Senden</button></div>
+        <div id="d-comments">${[...(c.comments||[])].reverse().map(cm=>`<div class="comment" data-cm="${cm.id}"><div class="body"><div class="when">${fmtDT(cm.at)}${cm.by?' · '+esc(cm.by):''}</div><p>${linkify(cm.text)}</p></div><button class="btn icon ghost sm x" title="Löschen" style="width:26px;height:26px">${ICON.x}</button></div>`).join('')}</div></div>
+      <details class="sec"><summary class="muted sm" style="cursor:pointer">Verlauf (${(c.activity||[]).length}) · erstellt ${fmtDT(c.createdAt)}</summary><div style="margin-top:6px">${[...(c.activity||[])].reverse().map(a=>`<div class="act"><b>${fmtDT(a.at)}</b> – ${esc(a.text)}</div>`).join('')}</div></details>
+    </div>
+    <div class="dfoot"><button class="btn sm" id="d-dup">Duplizieren</button><button class="btn sm" id="d-move">Verschieben</button><span class="spacer"></span><button class="btn sm" id="d-arch">Archivieren</button><button class="btn sm danger" id="d-del">Löschen</button></div>`;
+  const q=s=>$(s,d);
+  q('#d-close').onclick=closeDrawer;
+  q('#d-col').onchange=e=>moveCard(c.id,e.target.value,nextOrder(colCards(e.target.value)));
+  q('#d-done').onchange=e=>updateCard(c.id,{done:e.target.checked},e.target.checked?'Als erledigt markiert':'Wieder geöffnet');
+  const title=q('#d-title'); const grow=()=>{ title.style.height='auto'; title.style.height=Math.max(34,title.scrollHeight)+'px'; }; grow(); requestAnimationFrame(grow); title.oninput=grow;
+  title.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); title.blur(); } };
+  title.onblur=()=>{ const v=title.value.trim(); if(v && v!==c.title) updateCard(c.id,{title:v},'Titel geändert'); else title.value=c.title; };
+  q('#d-due').onchange=e=>updateCard(c.id,{due:e.target.value},e.target.value?'Fällig am '+fmtDate(e.target.value):'Fälligkeit entfernt');
+  q('#d-prio').onchange=e=>updateCard(c.id,{priority:e.target.value},'Priorität: '+PRIOS[e.target.value]);
+  $$('[data-l]',d).forEach(ch=>ch.onclick=()=>{ const ls=[...(c.labels||[])]; const i=ls.indexOf(ch.dataset.l); i>=0?ls.splice(i,1):ls.push(ch.dataset.l); updateCard(c.id,{labels:ls}); renderDrawer(); });
+  $$('[data-m]',d).forEach(ch=>ch.onclick=()=>{ const ls=[...(c.members||[])]; const i=ls.indexOf(ch.dataset.m); i>=0?ls.splice(i,1):ls.push(ch.dataset.m); updateCard(c.id,{members:ls}); renderDrawer(); });
+  q('#d-labels-manage').onclick=labelsModal; q('#d-members-manage').onclick=membersModal;
+  $$('.swatches .swatch',d).forEach(s=>s.onclick=()=>{ updateCard(c.id,{cover:s.dataset.c}); renderDrawer(); });
+  const dv=q('#d-desc-view'), dt=q('#d-desc');
+  dv.onclick=e=>{ if(e.target.tagName==='A') return; dv.hidden=true; dt.hidden=false; dt.style.height=Math.max(100,dt.scrollHeight)+'px'; dt.focus(); };
+  dt.onblur=()=>{ const v=dt.value; dt.hidden=true; dv.hidden=false; if(v!==(c.desc||'')){ updateCard(c.id,{desc:v},'Beschreibung geändert'); dv.innerHTML=linkify(v); } };
+  dt.onkeydown=e=>{ if(e.key==='Escape'){ dt.value=c.desc||''; dt.blur(); } };
+  // checklist
+  const saveCl=(list,msg)=>updateCard(c.id,{checklist:list},msg);
+  $$('#d-cl .cli',d).forEach(row=>{
+    const iid=row.dataset.i;
+    $('input[type=checkbox]',row).onchange=e=>{ const list=cl.map(i=>i.id===iid?{...i,done:e.target.checked}:i); saveCl(list); renderDrawer(); };
+    const t=$('.t',row); t.onblur=()=>{ const v=t.value.trim(); if(!v) return; const list=cl.map(i=>i.id===iid?{...i,text:v}:i); if(JSON.stringify(list)!==JSON.stringify(cl)) saveCl(list); };
+    t.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); t.blur(); q('#d-cl-new').focus(); } };
+    $('.x',row).onclick=()=>{ saveCl(cl.filter(i=>i.id!==iid)); renderDrawer(); };
+  });
+  q('#d-cl-new').onkeydown=e=>{ if(e.key==='Enter'){ const v=e.target.value.trim(); if(!v) return; saveCl([...cl,{id:uid(),text:v,done:false}], cl.length?null:'Checkliste angelegt'); renderDrawer(); setTimeout(()=>q('#d-cl-new')?.focus(),0); } };
+  // comments
+  const sendComment=()=>{ const v=q('#d-comment').value.trim(); if(!v) return; updateCard(c.id,{comments:[...(c.comments||[]),{id:uid(),text:v,at:now()}]},'Kommentar hinzugefügt'); renderDrawer(); };
+  q('#d-comment-ok').onclick=sendComment; q('#d-comment').onkeydown=e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) sendComment(); };
+  $$('#d-comments .comment',d).forEach(cm=>$('.x',cm).onclick=()=>{ updateCard(c.id,{comments:(c.comments||[]).filter(x=>x.id!==cm.dataset.cm)}); renderDrawer(); });
+  // footer
+  q('#d-dup').onclick=()=>duplicateCard(c.id);
+  q('#d-move').onclick=e=>moveMenu(e.currentTarget,c);
+  q('#d-arch').onclick=()=>{ closeDrawer(); archiveCard(c.id); };
+  q('#d-del').onclick=async()=>{ if(await confirmModal('Karte löschen',`„${esc(c.title)}“ endgültig löschen?`,'Löschen')) deleteCard(c.id); };
+}
+function moveMenu(a,c){
+  const p=pop(a,`<div class="sec"><h3>In anderes Board</h3></div>${S.boards.filter(b=>b.id!==S.boardId).map(b=>`<button class="bi" data-b="${b.id}"><span class="swatch" style="background:${b.color}"></span>${esc(b.name)}</button>`).join('')||'<div class="sec muted sm">Kein weiteres Board</div>'}
+    <hr><div class="sec"><h3>Position in Spalte</h3></div><button class="mi" id="mv-top">Ganz nach oben</button><button class="mi" id="mv-bottom">Ganz nach unten</button>`);
+  $$('[data-b]',p).forEach(b=>b.onclick=async()=>{
+    closePop(); const bid=b.dataset.b;
+    const cols=(await dbList('columns',bid)).sort((a,b)=>a.order-b.order);
+    if(!cols.length) return toast('Ziel-Board hat keine Spalten.');
+    const tb=S.boards.find(x=>x.id===bid); const num=tb.nextNum||1;
+    await write(async()=>{ await dbUpdate('cards',c.id,{boardId:bid,columnId:cols[0].id,order:Date.now(),num,labels:[],members:[],updatedAt:now(),activity:[...(c.activity||[]),act('Verschoben nach Board „'+tb.name+'“')]}); await dbUpdate('boards',bid,{nextNum:num+1}); S.cards=S.cards.filter(x=>x.id!==c.id); renderMain(); },'Karte verschoben nach „'+tb.name+'“');
+    closeDrawer();
+  });
+  $('#mv-top',p).onclick=()=>{ closePop(); const cs=colCards(c.columnId); updateCard(c.id,{order:(cs[0]?.order??1000)-1000}); };
+  $('#mv-bottom',p).onclick=()=>{ closePop(); updateCard(c.id,{order:nextOrder(colCards(c.columnId))}); };
+}
+
+/* ---------- Drag & drop (pointer events, touch long-press) ---------- */
+const drag={active:false,moved:false,type:null,id:null,el:null,ghost:null,ph:null,offX:0,offY:0,timer:null,startX:0,startY:0,pid:null};
+function onPD(e){
+  if(e.button!==0 && e.pointerType==='mouse') return;
+  const card=e.target.closest('.card'); const head=e.target.closest('.colhead');
+  if(!card && !head) return;
+  if(e.target.closest('button,input,textarea,select,a,[contenteditable]')) return;
+  const el = card || head.closest('.col');
+  drag.type = card?'card':'col'; drag.el=el; drag.id=el.dataset.id; drag.startX=e.clientX; drag.startY=e.clientY; drag.moved=false; drag.pid=e.pointerId;
+  const r=el.getBoundingClientRect(); drag.offX=e.clientX-r.left; drag.offY=e.clientY-r.top;
+  if(e.pointerType==='touch'){ drag.timer=setTimeout(()=>startDrag(e),280); }
+  else drag.pending=true;
+  document.addEventListener('pointermove',onPM); document.addEventListener('pointerup',onPU); document.addEventListener('pointercancel',onPU);
+}
+function startDrag(e){
+  drag.timer=null; drag.pending=false; drag.active=true; closePop();
+  const el=drag.el; const r=el.getBoundingClientRect();
+  const g=document.createElement('div'); g.id='ghost'; g.style.width=r.width+'px';
+  const clone=el.cloneNode(true); clone.classList.remove('dragging'); g.appendChild(clone); document.body.appendChild(g); drag.ghost=g;
+  const ph=document.createElement('div'); ph.className=drag.type==='card'?'placeholder':'colplaceholder'; ph.style.height=r.height+'px'; if(drag.type==='col'){ ph.style.width=r.width+'px'; }
+  el.parentNode.insertBefore(ph,el); drag.ph=ph; el.classList.add('dragging'); el.style.display='none';
+  document.body.classList.add('is-dragging');
+  if(navigator.vibrate) try{navigator.vibrate(10)}catch{}
+  moveGhost(e.clientX,e.clientY);
+}
+function moveGhost(x,y){ drag.ghost.style.left=(x-drag.offX)+'px'; drag.ghost.style.top=(y-drag.offY)+'px'; }
+function onPM(e){
+  const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+  if(!drag.active){
+    if(drag.timer){ if(Math.hypot(dx,dy)>8){ clearTimeout(drag.timer); drag.timer=null; cleanupDrag(); } return; }
+    if(drag.pending && Math.hypot(dx,dy)>5) startDrag(e); else return;
+  }
+  drag.moved=true; moveGhost(e.clientX,e.clientY);
+  drag.ghost.style.display='none'; const under=document.elementFromPoint(e.clientX,e.clientY); drag.ghost.style.display='';
+  if(!under) return;
+  if(drag.type==='card'){
+    const body=under.closest('.colbody') || under.closest('.col')?.querySelector('.colbody');
+    if(!body) return;
+    const cards=[...body.querySelectorAll('.card:not(.dragging)')];
+    let before=null; for(const c of cards){ const r=c.getBoundingClientRect(); if(e.clientY < r.top+r.height/2){ before=c; break; } }
+    if(before) body.insertBefore(drag.ph,before); else body.appendChild(drag.ph);
+    // autoscroll column
+    const br=body.getBoundingClientRect(); if(e.clientY<br.top+40) body.scrollTop-=8; else if(e.clientY>br.bottom-40) body.scrollTop+=8;
+  } else {
+    const bd=$('#board'); const cols=[...bd.querySelectorAll('.col:not(.dragging)')];
+    let before=null; for(const c of cols){ const r=c.getBoundingClientRect(); if(e.clientX < r.left+r.width/2){ before=c; break; } }
+    if(before) bd.insertBefore(drag.ph,before); else bd.insertBefore(drag.ph,$('.addcol',bd));
+  }
+  const bd=$('#board'); const bre=bd.getBoundingClientRect(); if(e.clientX<bre.left+50) bd.scrollLeft-=10; else if(e.clientX>bre.right-50) bd.scrollLeft+=10;
+}
+function onPU(e){
+  if(drag.timer){ clearTimeout(drag.timer); drag.timer=null; }
+  if(drag.active){
+    const ph=drag.ph;
+    if(drag.type==='card'){
+      const body=ph.parentNode; const colId=body.dataset.col;
+      const sib=[...body.children].filter(x=>x!==ph && x.classList.contains('card') && !x.classList.contains('dragging'));
+      const idx=[...body.children].indexOf(ph);
+      const prevEl=[...body.children].slice(0,idx).reverse().find(x=>x.classList.contains('card')&&!x.classList.contains('dragging'));
+      const nextEl=[...body.children].slice(idx+1).find(x=>x.classList.contains('card')&&!x.classList.contains('dragging'));
+      const prev=prevEl?S.cards.find(c=>c.id===prevEl.dataset.id)?.order:null; const next=nextEl?S.cards.find(c=>c.id===nextEl.dataset.id)?.order:null;
+      const c=S.cards.find(x=>x.id===drag.id);
+      const order=orderBetween(prev,next);
+      cleanupDrag(true);
+      if(c && (c.columnId!==colId || c.order!==order)) moveCard(drag.id,colId,order);
+      else renderMain();
+    } else {
+      const bd=$('#board'); const idx=[...bd.children].indexOf(ph);
+      const prevEl=[...bd.children].slice(0,idx).reverse().find(x=>x.classList.contains('col')&&!x.classList.contains('dragging'));
+      const nextEl=[...bd.children].slice(idx+1).find(x=>x.classList.contains('col')&&!x.classList.contains('dragging'));
+      const prev=prevEl?S.columns.find(c=>c.id===prevEl.dataset.id)?.order:null; const next=nextEl?S.columns.find(c=>c.id===nextEl.dataset.id)?.order:null;
+      const order=orderBetween(prev,next); const col=S.columns.find(c=>c.id===drag.id);
+      cleanupDrag(true);
+      if(col && col.order!==order){ col.order=order; S.columns.sort((a,b)=>a.order-b.order); renderMain(); write(()=>updateColumn(drag.id,{order})); } else renderMain();
+    }
+    setTimeout(()=>drag.moved=false,50);
+  } else cleanupDrag();
+}
+function cleanupDrag(keepMoved){
+  document.removeEventListener('pointermove',onPM); document.removeEventListener('pointerup',onPU); document.removeEventListener('pointercancel',onPU);
+  drag.ghost?.remove(); drag.ph?.remove(); if(drag.el){ drag.el.classList.remove('dragging'); drag.el.style.display=''; }
+  document.body.classList.remove('is-dragging');
+  drag.active=false; drag.pending=false; drag.ghost=null; drag.ph=null; drag.el=null; if(!keepMoved) drag.moved=false;
+}
+document.addEventListener('pointerdown',e=>{ if(e.target.closest('#board')) onPD(e); });
+document.addEventListener('touchmove',e=>{ if(drag.active) e.preventDefault(); },{passive:false});
+document.addEventListener('contextmenu',e=>{ if(drag.active||drag.timer) e.preventDefault(); });
+
+/* ---------- Keyboard ---------- */
+document.addEventListener('keydown',e=>{
+  if(!S.authed) return;
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)||document.activeElement?.isContentEditable;
+  if(e.key==='Escape'){ if(popEl) closePop(); else if($('#modalwrap')) closeModal(); else if(S.openCard) closeDrawer(); else if(typing) document.activeElement.blur(); return; }
+  if(typing) return;
+  if(e.key==='/'){ e.preventDefault(); $('#q')?.focus(); }
+  else if(e.key.toLowerCase()==='n' && board() && S.columns.length){ e.preventDefault(); if(S.view!=='board'){ S.view='board'; renderTopbar(); renderMain(); } const w=$(`.coladd[data-col="${S.columns[0].id}"]`); if(w) openAdd(w); }
+  else if(e.key.toLowerCase()==='f' && board()){ e.preventDefault(); filterMenu($('#filterbtn')); }
+  else if(['1','2','3'].includes(e.key) && board()){ S.view=['board','list','cal'][+e.key-1]; LS.set('lanes.view',S.view); renderTopbar(); renderMain(); }
+});
+
+/* ---------- Live indicator & boot ---------- */
+addEventListener('online',()=>$('#status')?.classList.remove('off')); addEventListener('offline',()=>$('#status')?.classList.add('off'));
+boot();
+</script>
+</body>
+</html>

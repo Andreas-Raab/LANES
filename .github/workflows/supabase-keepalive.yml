@@ -1,7 +1,7 @@
 # Hält das Supabase-Free-Projekt aktiv: eine kleine Datenbank-Abfrage pro Tag.
 # Einrichtung: Repo → Settings → Secrets and variables → Actions → zwei Secrets anlegen:
-#   SUPABASE_URL       (z. B. https://abcdefghij.supabase.co)
-#   SUPABASE_ANON_KEY  (anon public Key)
+#   SUPABASE_URL       (z. B. https://abcdefghij.supabase.co – ohne /rest/v1/ am Ende)
+#   SUPABASE_ANON_KEY  (anon public Key oder Publishable Key sb_publishable_…)
 name: Supabase keep-alive
 on:
   schedule:
@@ -12,10 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping database
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/boards?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
-          echo "HTTP $code"
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "::error::Secrets SUPABASE_URL und/oder SUPABASE_ANON_KEY fehlen (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          URL="${URL%/}"; URL="${URL%/rest/v1}"
+          code=$(curl -s -o /tmp/body -w "%{http_code}" \
+            "$URL/rest/v1/boards?select=id&limit=1" \
+            -H "apikey: $KEY" \
+            -H "Accept: application/json")
+          echo "HTTP $code"; head -c 300 /tmp/body; echo
+          # 200 = Abfrage lief (auch ein leeres [] zählt als Datenbankzugriff)
           test "$code" = "200"

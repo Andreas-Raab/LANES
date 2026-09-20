@@ -109,7 +109,8 @@ kbd{font-family:var(--font);font-size:11px;border:1px solid var(--line2);border-
 .search input{padding-left:32px}
 .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--surface)}
-.seg button{padding:6px 11px;color:var(--ink2);font-weight:500;border-right:1px solid var(--line2)}
+.seg button{padding:6px 11px;color:var(--ink2);font-weight:500;border-right:1px solid var(--line2);display:inline-flex;align-items:center;gap:6px}
+.seg .ic{display:none;align-items:center}
 .seg button:last-child{border-right:0}
 .seg button.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
 .spacer{flex:1}
@@ -366,6 +367,38 @@ table.tbl tbody tr:hover td{background:var(--surface2)}
 .setup{max-width:640px;margin:40px auto;padding:0 16px;line-height:1.6}
 .setup ol{padding-left:22px}.setup li{margin:8px 0}
 .setup code{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px}
+/* ---------- Handy-Layout (nur echte Handy-Breite; iPad/Desktop unverändert) ---------- */
+.only-phone{display:none}
+#fab{display:none}
+@media (max-width:720px){
+  .only-phone{display:inline-flex}
+  .hide-phone{display:none!important}
+  #topbar{gap:6px;flex-wrap:nowrap;padding:8px 12px}
+  #topbar .brand{display:none}
+  .boardpick{max-width:none;flex:1;min-width:0;font-size:15px}
+  .search.collapsible{display:none}
+  .search.collapsible.show{display:block;order:10;flex-basis:100%;max-width:none;margin-top:2px}
+  #viewseg{order:9}
+  #menubtn{order:10}
+  #viewseg button{padding:6px 9px;min-width:36px;justify-content:center}
+  .seg .lbl{display:none}
+  .seg .ic{display:inline-flex}
+  #colnav{display:flex;gap:6px;overflow-x:auto;padding:8px 12px 6px;scrollbar-width:none}
+  #colnav::-webkit-scrollbar{display:none}
+  #colnav .cn{flex:none;padding:6px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);color:var(--ink2);font-weight:600;font-size:13px;font-family:var(--display);white-space:nowrap}
+  #colnav .cn .ct{color:var(--muted);font-weight:500;margin-left:2px}
+  #colnav .cn.on{background:var(--board,var(--accent));color:#fff;border-color:transparent}
+  #colnav .cn.on .ct{color:#fff;opacity:.85}
+  #board{scroll-snap-type:x mandatory;gap:12px;padding:0 12px 12px;scroll-padding:12px}
+  .col,.addcol{width:calc(100vw - 32px);scroll-snap-align:start}
+  .col{max-height:100%}
+  .card .cbody{padding:8px 11px}
+  .card .excerpt{-webkit-line-clamp:1}
+  #fab{display:flex;position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:44;width:54px;height:54px;border-radius:50%;background:var(--board,var(--accent));color:#fff;box-shadow:var(--shadow-lg);align-items:center;justify-content:center;border:0}
+  #fab svg{width:24px;height:24px}
+  #selbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+
 </style>
 </head>
 <body>
@@ -896,6 +929,9 @@ const ICON = {
   x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
   plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  cols:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg>',
+  rows:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  cal:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>',
   sun:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
 };
 function renderTopbar(){
@@ -905,17 +941,19 @@ function renderTopbar(){
   t.innerHTML = `
     <div class="brand"><span class="mark"><i></i><i></i><i></i></span><span>Lanes</span></div>
     <button class="boardpick" id="boardpick" title="Board wechseln"><span class="swatch" style="background:${b?.color||'var(--muted)'}"></span><span class="name">${b?esc(b.name):'Board wählen'}</span>${ICON.chev}</button>
-    <div class="search">${ICON.search}<input class="input" id="q" placeholder="Suchen …  ( / )" value="${esc(S.filter.q)}" ${b?'':'disabled'}></div>
+    <button class="btn icon ghost only-phone" id="searchbtn" title="Suchen" ${b?'':'disabled'}>${ICON.search}</button>
+    <div class="search collapsible">${ICON.search}<input class="input" id="q" placeholder="Suchen …  ( / )" value="${esc(S.filter.q)}" ${b?'':'disabled'}></div>
     <button class="btn ${fcount?'primary':''}" id="filterbtn" ${b?'':'disabled'}>${ICON.filter}<span class="hide-m">Filter</span>${fcount?`<span class="badge" style="${fcount?'background:var(--accent-ink);color:var(--accent)':''}">${fcount}</span>`:''}</button>
-    <div class="seg" id="viewseg">${['board','list','cal'].map(v=>`<button data-v="${v}" class="${S.view===v?'on':''}">${VIEW_NAMES[v]}</button>`).join('')}</div>
+    <div class="seg" id="viewseg">${['board','list','cal'].map(v=>`<button data-v="${v}" class="${S.view===v?'on':''}" title="${VIEW_NAMES[v]}"><span class="ic">${{board:ICON.cols,list:ICON.rows,cal:ICON.cal}[v]}</span><span class="lbl">${VIEW_NAMES[v]}</span></button>`).join('')}</div>
     <div class="spacer"></div>
     ${myRole()==='viewer'?'<span class="chip" style="background:var(--warn-soft);color:var(--warn)">Nur Lesen</span>':''}
     <span id="status" class="hide-m" title="${esc(S.user?.email||'')}"><i></i>Live</span>
-    <button class="btn icon ghost" id="themebtn" title="Hell/Dunkel">${ICON.sun}</button>
+    <button class="btn icon ghost hide-phone" id="themebtn" title="Hell/Dunkel">${ICON.sun}</button>
     <button class="btn icon ghost" id="menubtn" title="Board-Einstellungen">${ICON.gear}</button>`;
   $('#boardpick').onclick = e=>boardMenu(e.currentTarget);
   $('#q').oninput = e=>{ S.filter.q=e.target.value; renderMain(); };
   $('#filterbtn').onclick = e=>filterMenu(e.currentTarget);
+  if($('#searchbtn')) $('#searchbtn').onclick=()=>{ const sc=$('.search'); sc.classList.toggle('show'); if(sc.classList.contains('show')) setTimeout(()=>$('#q')?.focus(),0); };
   $$('#viewseg button').forEach(bt=>bt.onclick=()=>{ S.view=bt.dataset.v; LS.set('lanes.view',S.view); renderTopbar(); renderMain(); });
   $('#themebtn').onclick = toggleTheme;
   $('#menubtn').onclick = e=>settingsMenu(e.currentTarget);
@@ -981,13 +1019,14 @@ function settingsMenu(a){
     <div class="sec muted sm" style="padding-top:2px">${esc(S.user?.email||'')}</div>
     <button class="mi" id="m-pw">Passwort ändern</button>
     <button class="mi" id="m-errlog">Fehlerprotokoll${S.errlog.length?' <span class="k muted sm">'+S.errlog.length+'</span>':''}</button>
+    <button class="mi hide-phone-none" id="m-theme">Hell / Dunkel</button>
     <button class="mi" id="m-keys">Tastenkürzel</button>
     <button class="mi" id="m-logout">Abmelden</button>
     ${b?`<hr><button class="mi danger" id="m-delete">Board löschen</button>`:''}`, {right:true});
   const on=(id,fn)=>{ const el=$(id,p); if(el) el.onclick=()=>{ closePop(); fn(); }; };
   on('#m-rename', renameBoardModal); on('#m-labels', labelsModal); on('#m-members', membersModal); on('#m-fields', fieldsModal); on('#m-bg', bgModal); on('#m-share', shareModal); on('#m-notify', toggleNotify);
   on('#m-archive', archiveModal); on('#m-stats', statsModal); on('#m-export', exportBoard); on('#m-import', importModal);
-  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-errlog', errlogModal); on('#m-keys', keysModal); on('#m-logout', logout);
+  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-errlog', errlogModal); on('#m-theme', toggleTheme); on('#m-keys', keysModal); on('#m-logout', logout);
   on('#m-delete', async()=>{ if(await confirmModal('Board löschen', `„${esc(b.name)}“ mit allen ${S.cards.length} Karten endgültig löschen?`, 'Endgültig löschen')) deleteBoard(); });
 }
 
@@ -1273,14 +1312,38 @@ async function importTrello(d){
 function trelloColor(c){ return {red:'#D9534F',orange:'#E8863B',yellow:'#D9B12D',green:'#3FA55C',blue:'#3B7DD8',purple:'#8A5CD6',pink:'#D65C9E',sky:'#2A9D8F',lime:'#3FA55C',black:'#8B95A5'}[(c||'').split('_')[0]]||'#8B95A5'; }
 
 /* ---------- Main render ---------- */
+const mqPhone = window.matchMedia('(max-width:720px)');
+const isPhone = ()=>mqPhone.matches;
+try{ mqPhone.addEventListener('change', ()=>{ renderTopbar(); renderMain(); }); }catch{ try{ mqPhone.addListener(()=>{ renderTopbar(); renderMain(); }); }catch{} }
+function colnavHTML(){ return `<div id="colnav">${S.columns.map((c,i)=>`<button class="cn" data-i="${i}"><span class="nm">${esc(c.name)}</span> <span class="ct">${colCards(c.id).length}</span></button>`).join('')}</div>`; }
+function bindColnav(m){
+  const nav=$('#colnav',m), bd=$('#board',m); if(!nav||!bd) return;
+  const cols=()=>[...bd.querySelectorAll('.col')];
+  $$('.cn',nav).forEach(b=>b.onclick=()=>{ cols()[+b.dataset.i]?.scrollIntoView({inline:'start',block:'nearest',behavior:'smooth'}); });
+  const upd=()=>{ const sl=bd.scrollLeft; let idx=0,best=1e9; cols().forEach((c,i)=>{ const d=Math.abs(c.offsetLeft-sl); if(d<best){best=d;idx=i;} }); $$('.cn',nav).forEach((b,i)=>b.classList.toggle('on',i===idx)); nav.querySelector('.cn.on')?.scrollIntoView({inline:'nearest',block:'nearest'}); };
+  bd.addEventListener('scroll',()=>{ clearTimeout(bd._cn); bd._cn=setTimeout(upd,60); });
+  upd();
+}
+function updateFab(){
+  let fab=$('#fab');
+  const show = isPhone() && board() && S.view==='board' && S.columns.length;
+  if(!show){ if(fab) fab.remove(); return; }
+  if(!fab){ fab=document.createElement('button'); fab.id='fab'; fab.title='Karte hinzufügen'; fab.innerHTML=ICON.plus; $('#app').appendChild(fab); }
+  fab.onclick=()=>{
+    const bd=$('#board'); if(!bd) return; const cols=[...bd.querySelectorAll('.col')];
+    let idx=0,best=1e9; cols.forEach((c,i)=>{ const d=Math.abs(c.offsetLeft-bd.scrollLeft); if(d<best){best=d;idx=i;} });
+    const col=S.columns[idx]; if(!col) return; const w=$(`.coladd[data-col="${col.id}"]`); if(w){ cols[idx]?.scrollIntoView({inline:'start',block:'nearest'}); openAdd(w); }
+  };
+}
 function renderMain(){
   const m=$('#main'); if(!S.ready) return;
   const b=board();
   if(!b){
     m.innerHTML=`<div class="empty"><h2>${S.boards.length?'Board wählen':'Willkommen bei Lanes'}</h2><p>${S.boards.length?'Wähle oben ein Board aus.':'Lege dein erstes Board an – mit einer Vorlage oder leer.'}</p><button class="btn primary" id="e-new">${ICON.plus} Neues Board</button></div>`;
-    $('#e-new').onclick=newBoardModal; return;
+    $('#e-new').onclick=newBoardModal; updateFab(); return;
   }
   if(S.view==='board') renderBoard(m); else if(S.view==='list') renderList(m); else renderCal(m);
+  updateFab();
 }
 function cardHTML(c){
   const b=board(); const labels=(c.labels||[]).map(id=>(b.labels||[]).find(l=>l.id===id)).filter(Boolean);
@@ -1325,8 +1388,9 @@ function renderBoard(m){
     </section>`;}).join('')}
     <div class="addcol"><button id="addcol">${ICON.plus} Spalte hinzufügen</button></div>
   </div>`;
-  m.innerHTML=html;
+  m.innerHTML=(isPhone()?colnavHTML():'')+html;
   const bd=$('#board',m);
+  if(isPhone()) bindColnav(m);
   $$('.colbody',bd).forEach(el=>{ if(S.colScroll[el.dataset.col]) el.scrollTop=S.colScroll[el.dataset.col]; });
   // events
   $$('.cname',bd).forEach(el=>{

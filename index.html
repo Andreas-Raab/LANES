@@ -6,6 +6,11 @@
 <meta name="color-scheme" content="light dark">
 <title>Lanes</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230E7C7B'/%3E%3Crect x='6' y='7' width='5' height='18' rx='1.5' fill='%23fff'/%3E%3Crect x='13.5' y='7' width='5' height='11' rx='1.5' fill='%23fff'/%3E%3Crect x='21' y='7' width='5' height='14' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0E7C7B">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lanes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <style>
@@ -332,6 +337,21 @@ table.tbl tbody tr:hover td{background:var(--surface2)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #app[data-bg="image"] .col{--col-bg:rgba(20,26,36,.72)}}
 :root[data-theme="dark"] #app[data-bg="image"] .col{--col-bg:rgba(20,26,36,.72)}
 
+/* ---------- Auswahl ---------- */
+.card.selected{outline:2px solid var(--accent);outline-offset:1px;box-shadow:0 0 0 4px var(--accent-soft)}
+#selbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow-lg);max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
+#selbar .cnt{font-weight:600;padding:0 6px;font-size:13px}
+/* ---------- Formatier-Leiste ---------- */
+.mdbar{display:flex;align-items:center;gap:3px;padding:5px;margin-bottom:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);flex-wrap:wrap}
+.mdbar button{min-width:30px;height:30px;padding:0 8px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--ink);font-size:14px;display:inline-flex;align-items:center;justify-content:center}
+.mdbar button:hover{background:var(--surface);border-color:var(--line2)}
+.mdbar button.ok{font-size:13px;font-weight:600;color:var(--accent-text);background:var(--accent-soft)}
+/* ---------- Fehlerprotokoll ---------- */
+.errlog{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px}
+.errlog .er{border-bottom:1px solid var(--line);padding-bottom:6px}
+.errlog .er:last-child{border-bottom:0}
+.errlog pre{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);margin:4px 0 0}
+
 /* ---------- Responsive ---------- */
 @media (max-width:720px){
   #topbar{padding:8px 12px;gap:6px}
@@ -402,7 +422,7 @@ const S = {
   view: LS.get('lanes.view')||'board',
   filter:{q:'',labels:[],members:[],prio:[],due:'',hideDone:false},
   openCard:null, calMonth:null, listSort:{k:'order',d:1}, listGroup:true,
-  colScroll:{}, pendingUndo:null,
+  colScroll:{}, undo:[], sel:new Set(), errlog:(LS.get('lanes.errlog')||[]),
 };
 
 /* ---------- Theme ---------- */
@@ -424,6 +444,122 @@ function toast(msg, action){
   $('#toasts').appendChild(el);
   setTimeout(()=>el.remove(), action?7000:3000);
 }
+
+/* ---------- Fehlerprotokoll ---------- */
+function logErr(where, e){
+  try{
+    const rec={t:now(), where, msg:(e&&(e.message||(e.reason&&e.reason.message)))||String(e)};
+    const st=(e&&e.stack)||(e&&e.reason&&e.reason.stack)||''; if(st) rec.stack=String(st).split('\n').slice(0,4).join('\n');
+    S.errlog.unshift(rec); S.errlog=S.errlog.slice(0,50); LS.set('lanes.errlog',S.errlog);
+  }catch{}
+}
+window.addEventListener('error', e=>logErr('js', e.error||e.message));
+window.addEventListener('unhandledrejection', e=>logErr('promise', e.reason));
+function errlogModal(){
+  const w=modal(`<h2>Fehlerprotokoll</h2><p class="muted sm" style="margin:-6px 0 0">Die letzten Fehler auf diesem Gerät. Bei Problemen „Kopieren“ und den Text weitergeben.</p>
+    ${S.errlog.length?`<div class="errlog">${S.errlog.map(r=>`<div class="er"><div class="muted sm">${fmtDT(r.t)} · ${esc(r.where)}</div><div>${esc(r.msg)}</div>${r.stack?`<pre>${esc(r.stack)}</pre>`:''}</div>`).join('')}</div>`:'<p class="muted">Keine Fehler aufgezeichnet.</p>'}
+    <div class="actions"><button class="btn danger" id="el-clear">Leeren</button><span class="spacer"></span><button class="btn" onclick="closeModal()">Schließen</button><button class="btn primary" id="el-copy">Kopieren</button></div>`);
+  $('#el-clear',w).onclick=()=>{ S.errlog=[]; LS.set('lanes.errlog',[]); closeModal(); toast('Protokoll geleert'); };
+  $('#el-copy',w).onclick=async()=>{ const txt='Lanes Fehlerprotokoll\n'+navigator.userAgent+'\n\n'+S.errlog.map(r=>`[${r.t}] ${r.where}: ${r.msg}${r.stack?'\n'+r.stack:''}`).join('\n\n'); try{ await navigator.clipboard.writeText(txt); toast('Kopiert'); }catch{ toast('Kopieren nicht möglich'); } };
+}
+
+/* ---------- Rückgängig ---------- */
+function pushUndo(label, fn){ S.undo.push({label,fn}); if(S.undo.length>40) S.undo.shift(); }
+async function doUndo(){ const u=S.undo.pop(); if(!u){ toast('Nichts zum Rückgängigmachen'); return; } try{ await u.fn(); toast('Rückgängig: '+u.label); }catch(e){ logErr('undo',e); toast('Rückgängig fehlgeschlagen'); } }
+function undoCard(id, label, fields){ const c=S.cards.find(x=>x.id===id); if(!c) return; const before={}; fields.forEach(f=>{ before[f]=JSON.parse(JSON.stringify(c[f]??null)); }); pushUndo(label, ()=>updateCard(id, before)); }
+
+/* ---------- Schnelleres Zeichnen: einzelne Karte, gebündelte Realtime-Updates ---------- */
+let _rq=false;
+function scheduleRender(){ if(_rq) return; _rq=true; requestAnimationFrame(()=>{ _rq=false; renderTopbar(); renderMain(); refreshDrawer(); }); }
+function bindCard(el){
+  const id=el.dataset.id;
+  el.classList.toggle('selected', S.sel.has(id));
+  el.onclick=(e)=>{ if(e.metaKey||e.ctrlKey||S.sel.size){ e.preventDefault(); toggleSel(id); return; } if(!drag.moved) openDrawer(id); };
+  el.onkeydown=e=>{ if(e.key==='Enter'){ if(S.sel.size) toggleSel(id); else openDrawer(id); } };
+}
+function renderCardEl(id){
+  const el=document.querySelector('#board .card[data-id="'+CSS.escape(id)+'"]'); if(!el) return false;
+  const c=S.cards.find(x=>x.id===id); if(!c) return false;
+  const tmp=document.createElement('div'); tmp.innerHTML=cardHTML(c); const nw=tmp.firstElementChild; if(!nw) return false;
+  el.replaceWith(nw); bindCard(nw); return true;
+}
+function repaintCard(id, patch){
+  const structural = patch && (('columnId' in patch)||('order' in patch)||('archived' in patch)||('done' in patch));
+  if(structural || filterActive() || S.view!=='board'){ renderMain(); return; }
+  if(!renderCardEl(id)) renderMain();
+}
+
+/* ---------- Mehrfachauswahl ---------- */
+function toggleSel(id){ if(S.sel.has(id)) S.sel.delete(id); else S.sel.add(id); syncSel(); }
+function clearSel(){ if(!S.sel.size) return; S.sel.clear(); syncSel(); }
+function syncSel(){ document.querySelectorAll('#board .card').forEach(el=>el.classList.toggle('selected', S.sel.has(el.dataset.id))); renderSelBar(); }
+function renderSelBar(){
+  [...S.sel].forEach(id=>{ if(!S.cards.find(c=>c.id===id&&!c.archived)) S.sel.delete(id); });
+  let bar=$('#selbar');
+  if(!S.sel.size){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='selbar'; $('#app').appendChild(bar); }
+  bar.innerHTML=`<span class="cnt">${S.sel.size} ausgewählt</span>
+    <button class="btn sm" data-a="move">Verschieben</button>
+    <button class="btn sm" data-a="label">Label</button>
+    <button class="btn sm" data-a="prio">Priorität</button>
+    <button class="btn sm" data-a="archive">Archivieren</button>
+    <button class="btn sm danger" data-a="del">Löschen</button>
+    <button class="btn icon ghost sm" data-a="clear" title="Auswahl aufheben">${ICON.x}</button>`;
+  const ids=()=>[...S.sel];
+  $('[data-a=clear]',bar).onclick=clearSel;
+  $('[data-a=move]',bar).onclick=e=>{ const pe=pop(e.currentTarget, `<div class="sec"><h3>Verschieben nach</h3></div>`+S.columns.map(x=>`<button class="mi" data-c="${x.id}">${esc(x.name)}</button>`).join(''), {right:true}); $$('[data-c]',pe).forEach(b=>b.onclick=()=>{ closePop(); moveMany(ids(), b.dataset.c); }); };
+  $('[data-a=label]',bar).onclick=e=>{ const b=board(); const pe=pop(e.currentTarget, `<div class="sec"><h3>Label umschalten</h3></div>`+((b.labels||[]).map(l=>`<button class="mi" data-l="${l.id}"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</button>`).join('')||'<div class="sec muted sm">Keine Labels</div>'), {right:true}); $$('[data-l]',pe).forEach(x=>x.onclick=()=>{ closePop(); toggleLabelMany(ids(), x.dataset.l); }); };
+  $('[data-a=prio]',bar).onclick=e=>{ const pe=pop(e.currentTarget, `<div class="sec"><h3>Priorität</h3></div>`+Object.entries(PRIOS).map(([k,v])=>`<button class="mi" data-p="${k}">${v}</button>`).join(''), {right:true}); $$('[data-p]',pe).forEach(x=>x.onclick=()=>{ closePop(); bulkUpdate(ids(), ()=>({priority:x.dataset.p}), 'Priorität'); }); };
+  $('[data-a=archive]',bar).onclick=()=>archiveMany(ids());
+  $('[data-a=del]',bar).onclick=async()=>{ const n=S.sel.size; if(await confirmModal('Karten löschen', n+' Karte(n) endgültig löschen?', 'Löschen')) deleteMany(ids()); };
+}
+async function bulkUpdate(ids, makePatch, label){
+  const snaps=ids.map(id=>{ const c=S.cards.find(x=>x.id===id); return c?{id,doc:JSON.parse(JSON.stringify(c))}:null; }).filter(Boolean);
+  pushUndo(label+' ('+snaps.length+')', async()=>{ for(const s of snaps){ const c=S.cards.find(x=>x.id===s.id); if(c){ Object.assign(c, s.doc); await write(()=>dbSet('cards',c)); } } renderMain(); });
+  for(const s of snaps){ const c=S.cards.find(x=>x.id===s.id); if(!c) continue; Object.assign(c, makePatch(c), {updatedAt:now()}); await write(()=>dbSet('cards',c)); }
+  renderMain(); toast(label+': '+snaps.length+' Karten');
+}
+function toggleLabelMany(ids, lid){
+  const cards=ids.map(id=>S.cards.find(x=>x.id===id)).filter(Boolean);
+  const allHave=cards.length&&cards.every(c=>(c.labels||[]).includes(lid));
+  bulkUpdate(ids, c=>{ const set=new Set(c.labels||[]); if(allHave) set.delete(lid); else set.add(lid); return {labels:[...set]}; }, allHave?'Label entfernt':'Label gesetzt');
+}
+async function moveMany(ids, colId){
+  const col=S.columns.find(x=>x.id===colId); if(!col) return;
+  const snaps=ids.map(id=>{ const c=S.cards.find(x=>x.id===id); return c?{id,columnId:c.columnId,order:c.order,done:c.done}:null; }).filter(Boolean);
+  pushUndo('Verschieben ('+snaps.length+')', async()=>{ for(const s of snaps){ await updateCard(s.id,{columnId:s.columnId,order:s.order,done:s.done}); } });
+  let o=nextOrder(colCards(colId));
+  for(const id of ids){ const c=S.cards.find(x=>x.id===id); if(!c) continue; const patch={columnId:colId,order:o}; if(col.done && !c.done) patch.done=true; Object.assign(c,patch,{updatedAt:now()}); await write(()=>dbSet('cards',c)); o+=1000; }
+  renderMain(); clearSel(); toast('Verschoben: '+snaps.length+' → „'+col.name+'“');
+}
+async function archiveMany(ids){
+  const list=[...ids]; pushUndo('Archivieren ('+list.length+')', async()=>{ for(const id of list){ await updateCard(id,{archived:false}); } });
+  for(const id of list){ const c=S.cards.find(x=>x.id===id); if(c){ Object.assign(c,{archived:true,updatedAt:now()}); await write(()=>dbSet('cards',c)); } }
+  renderMain(); clearSel(); toast(list.length+' Karten archiviert');
+}
+async function deleteMany(ids){
+  const snaps=ids.map(id=>{ const c=S.cards.find(x=>x.id===id); return c?JSON.parse(JSON.stringify(c)):null; }).filter(Boolean);
+  pushUndo('Löschen ('+snaps.length+')', async()=>{ for(const doc of snaps){ const {id,...rest}=doc; if(!S.cards.find(x=>x.id===id)) S.cards.push({id,...rest}); await write(()=>dbSet('cards',{id,...rest})); } renderMain(); });
+  for(const doc of snaps){ S.cards=S.cards.filter(x=>x.id!==doc.id); await write(()=>dbDelete('cards',doc.id)); }
+  renderMain(); clearSel(); toast(snaps.length+' Karten gelöscht');
+}
+
+/* ---------- Formatier-Knöpfe (Markdown) ---------- */
+function mdApply(kind){
+  const ta=$('#d-desc'); if(!ta) return;
+  const s=ta.selectionStart, e=ta.selectionEnd, v=ta.value, sel=v.slice(s,e);
+  const wrap=(l,r,ph)=>{ const inner=sel||ph; ta.value=v.slice(0,s)+l+inner+r+v.slice(e); const a=s+l.length; ta.setSelectionRange(a, a+inner.length); };
+  const pre=(pp)=>{ const ls=v.lastIndexOf('\n',s-1)+1; ta.value=v.slice(0,ls)+pp+v.slice(ls); ta.setSelectionRange(s+pp.length, e+pp.length); };
+  if(kind==='b') wrap('**','**','Text');
+  else if(kind==='i') wrap('*','*','Text');
+  else if(kind==='code') wrap('`','`','Code');
+  else if(kind==='link') wrap('[','](https://)', sel||'Text');
+  else if(kind==='h') pre('## ');
+  else if(kind==='ul') pre('- ');
+  else if(kind==='task') pre('- [ ] ');
+  ta.focus(); ta.dispatchEvent(new Event('input'));
+}
+
 
 /* ---------- Supabase client & Auth ---------- */
 let sb=null;
@@ -560,7 +696,7 @@ function applyChange(table, payload){
   }
   if(table==='boards'){ S.boards=S.boards.filter(b=>!b.archived).sort((a,b)=>(a.order||0)-(b.order||0)); if(!S.boards.find(b=>b.id===S.boardId)){ const nb=S.boards[0]?.id||null; if(nb) subscribeBoard(nb); else { S.boardId=null; S.columns=[]; S.cards=[]; } } }
   else list.sort((a,b)=>(a.order||0)-(b.order||0));
-  renderTopbar(); renderMain(); refreshDrawer();
+  scheduleRender();
 }
 async function startApp(){
   $('#topbar').hidden=false; $('#main').hidden=false;
@@ -584,7 +720,7 @@ async function reloadBoard(){
 }
 async function subscribeBoard(id){
   if(S.chBoard){ sb.removeChannel(S.chBoard); S.chBoard=null; }
-  S.columns=[]; S.cards=[]; S.colScroll={};
+  S.columns=[]; S.cards=[]; S.colScroll={}; S.sel.clear();
   S.boardId=id; LS.set('lanes.board',id);
   renderTopbar(); renderMain();
   try{ const [c,k]=await Promise.all([dbList('columns',id),dbList('cards',id)]); if(S.boardId!==id) return; S.columns=c.sort((a,b)=>a.order-b.order); S.cards=k.sort((a,b)=>a.order-b.order); }
@@ -602,7 +738,7 @@ const myRole = ()=> (board()?.ownerId && board().ownerId===S.user?.id) ? 'owner'
 const colCards = cid => S.cards.filter(c=>c.columnId===cid && !c.archived);
 async function write(fn, okMsg){
   try{ await fn(); if(okMsg) toast(okMsg); }
-  catch(e){ console.error(e); toast('Speichern fehlgeschlagen: '+(e.message||e.code||e)); }
+  catch(e){ console.error(e); logErr('write',e); toast('Speichern fehlgeschlagen: '+(e.message||e.code||e)); }
 }
 function nextOrder(list){ return list.length? Math.max(...list.map(x=>x.order||0))+1000 : 1000; }
 function orderBetween(prev,next){
@@ -670,7 +806,7 @@ async function updateCard(id, patch, activity){
   const wasDone=!!c.done;
   const p = {...patch, updatedAt:now()};
   if(activity){ p.activity=[...(c.activity||[]), act(activity)].slice(-30); }
-  Object.assign(c, p); renderMain();
+  Object.assign(c, p); repaintCard(id, patch);
   await write(()=>dbSet('cards',c));
   if(!wasDone && c.done && c.repeat && c.repeat!=='none') await spawnRepeat(c);
 }
@@ -696,24 +832,28 @@ async function spawnRepeat(c){
   const id=await addCard(target.id,c.title,copy);
   toast('Nächste Wiederholung angelegt: '+fmtDate(due),{label:'Öffnen',fn:()=>openDrawer(id)});
 }
-async function moveCard(id, columnId, order){
+async function moveCard(id, columnId, order, noUndo){
   const c=S.cards.find(x=>x.id===id); if(!c) return;
   const col=S.columns.find(x=>x.id===columnId); const from=S.columns.find(x=>x.id===c.columnId);
+  if(!noUndo && (c.columnId!==columnId || c.order!==order)){ const b={columnId:c.columnId, order:c.order, done:c.done}; pushUndo('Verschieben', ()=>updateCard(id,b)); }
   const patch={columnId, order};
   let activity=null;
   if(from && col && from.id!==col.id){ activity=`Verschoben: ${from.name} → ${col.name}`; if(col.done && !c.done) patch.done=true; if(!col.done && from.done && c.done) patch.done=false; }
   await updateCard(id, patch, activity);
 }
 async function archiveCard(id, arch=true){
+  if(arch) pushUndo('Archivieren', ()=>updateCard(id,{archived:false}));
   await updateCard(id,{archived:arch}, arch?'Archiviert':'Wiederhergestellt');
-  if(arch) toast('Karte archiviert',{label:'Rückgängig',fn:()=>archiveCard(id,false)});
+  if(arch) toast('Karte archiviert',{label:'Rückgängig',fn:()=>updateCard(id,{archived:false})});
 }
 async function deleteCard(id){
   const c=S.cards.find(x=>x.id===id); if(!c) return;
   const copy={...c}; delete copy.id;
+  const restore=()=>{ if(!S.cards.find(x=>x.id===id)) S.cards.push({id,...copy}); renderMain(); return write(()=>dbSet('cards',{id,...copy})); };
+  pushUndo('Löschen', restore);
   S.cards=S.cards.filter(x=>x.id!==id); renderMain(); closeDrawer();
   await write(()=>dbDelete('cards',id));
-  toast('Karte gelöscht',{label:'Rückgängig',fn:()=>write(()=>dbSet('cards',{id,...copy}))});
+  toast('Karte gelöscht',{label:'Rückgängig',fn:restore});
 }
 async function duplicateCard(id){
   const c=S.cards.find(x=>x.id===id); if(!c) return;
@@ -840,13 +980,14 @@ function settingsMenu(a){
     <button class="mi" id="m-notify">${LS.get('lanes.notify')?'Erinnerungen: an':'Erinnerungen aktivieren'}</button>
     <div class="sec muted sm" style="padding-top:2px">${esc(S.user?.email||'')}</div>
     <button class="mi" id="m-pw">Passwort ändern</button>
+    <button class="mi" id="m-errlog">Fehlerprotokoll${S.errlog.length?' <span class="k muted sm">'+S.errlog.length+'</span>':''}</button>
     <button class="mi" id="m-keys">Tastenkürzel</button>
     <button class="mi" id="m-logout">Abmelden</button>
     ${b?`<hr><button class="mi danger" id="m-delete">Board löschen</button>`:''}`, {right:true});
   const on=(id,fn)=>{ const el=$(id,p); if(el) el.onclick=()=>{ closePop(); fn(); }; };
   on('#m-rename', renameBoardModal); on('#m-labels', labelsModal); on('#m-members', membersModal); on('#m-fields', fieldsModal); on('#m-bg', bgModal); on('#m-share', shareModal); on('#m-notify', toggleNotify);
   on('#m-archive', archiveModal); on('#m-stats', statsModal); on('#m-export', exportBoard); on('#m-import', importModal);
-  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-keys', keysModal); on('#m-logout', logout);
+  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-errlog', errlogModal); on('#m-keys', keysModal); on('#m-logout', logout);
   on('#m-delete', async()=>{ if(await confirmModal('Board löschen', `„${esc(b.name)}“ mit allen ${S.cards.length} Karten endgültig löschen?`, 'Endgültig löschen')) deleteBoard(); });
 }
 
@@ -1200,7 +1341,7 @@ function renderBoard(m){
   $$('.col.collapsed .colhead',bd).forEach(h=>h.onclick=()=>write(()=>updateColumn(h.closest('.col').dataset.id,{collapsed:false})));
   $$('.add-open',bd).forEach(b=>b.onclick=()=>openAdd(b.closest('.coladd')));
   $$('.coladd textarea',bd).forEach(t=>bindAdd(t.closest('.coladd')));
-  $$('.card',bd).forEach(c=>{ c.onclick=()=>{ if(!drag.moved) openDrawer(c.dataset.id); }; c.onkeydown=e=>{ if(e.key==='Enter') openDrawer(c.dataset.id); }; });
+  $$('.card',bd).forEach(bindCard); syncSel();
   $('#addcol',bd).onclick=()=>{
     const w=$('.addcol',bd); w.innerHTML=`<input placeholder="Name der Spalte" autofocus>`; const i=$('input',w); i.focus();
     const commit=()=>{ const n=i.value.trim(); if(n) write(()=>addColumn(n)); else renderMain(); };
@@ -1251,6 +1392,7 @@ function columnMenu(a, id){
 
 /* ---------- List view ---------- */
 function renderList(m){
+  if(S.sel.size) clearSel();
   const b=board(); const cards=visibleCards(S.cards); const s=S.listSort;
   const pr={urgent:0,high:1,medium:2,low:3,none:4};
   const colIdx=Object.fromEntries(S.columns.map((c,i)=>[c.id,i]));
@@ -1274,6 +1416,7 @@ function renderList(m){
 
 /* ---------- Calendar ---------- */
 function renderCal(m){
+  if(S.sel.size) clearSel();
   if(!S.calMonth){ const d=new Date(); S.calMonth=[d.getFullYear(),d.getMonth()]; }
   const [y,mo]=S.calMonth; const first=new Date(y,mo,1); const startDow=(first.getDay()+6)%7; const days=new Date(y,mo+1,0).getDate();
   const cards=visibleCards(S.cards).filter(c=>c.due); const byDay={}; cards.forEach(c=>(byDay[c.due]=byDay[c.due]||[]).push(c));
@@ -1359,7 +1502,19 @@ function renderDrawer(){
       <div class="sec"><h3>Labels <button class="btn sm ghost" id="d-labels-manage">Bearbeiten</button></h3><div class="chips">${(b.labels||[]).map(l=>`<span class="chip tog ${(c.labels||[]).includes(l.id)?'on':''}" data-l="${l.id}"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</span>`).join('')||'<span class="muted sm">Noch keine Labels – über „Bearbeiten“ anlegen.</span>'}</div></div>
       <div class="sec"><h3>Mitglieder <button class="btn sm ghost" id="d-members-manage">Bearbeiten</button></h3><div class="chips">${(b.members||[]).map(m=>`<span class="chip tog ${(c.members||[]).includes(m.id)?'on':''}" data-m="${m.id}"><span class="avatar" style="background:${m.color};width:18px;height:18px;font-size:9px">${esc(initials(m.name))}</span>${esc(m.name)}</span>`).join('')||'<span class="muted sm">Noch keine Mitglieder – über „Bearbeiten“ anlegen.</span>'}</div></div>
       <div class="sec"><h3>Kartenfarbe</h3><div class="swatches"><span class="swatch none ${!c.cover?'on':''}" data-c=""></span>${LABEL_COLORS.map(col=>`<span class="swatch ${c.cover===col?'on':''}" data-c="${col}" style="background:${col}"></span>`).join('')}</div></div>
-      <div class="sec"><h3>Beschreibung</h3><div id="d-desc-view" class="desc-view md">${md(c.desc||'')}</div><textarea class="textarea" id="d-desc" hidden placeholder="Markdown möglich: **fett**, *kursiv*, - Liste, - [ ] Aufgabe, # Überschrift, [Link](https://…)">${esc(c.desc||'')}</textarea><div class="muted sm" id="d-desc-hint" hidden>Markdown: **fett** · *kursiv* · - Liste · - [ ] Aufgabe · # Überschrift · [Text](https://…) · \`Code\`</div></div>
+      <div class="sec"><h3>Beschreibung</h3>
+        <div class="mdbar" id="d-mdbar" hidden>
+          <button type="button" data-md="b" title="Fett (Strg+B)"><b>B</b></button>
+          <button type="button" data-md="i" title="Kursiv (Strg+I)"><i>I</i></button>
+          <button type="button" data-md="h" title="Überschrift">H</button>
+          <button type="button" data-md="ul" title="Aufzählung">&bull;</button>
+          <button type="button" data-md="task" title="Aufgabe">&#9744;</button>
+          <button type="button" data-md="link" title="Link">&#128279;</button>
+          <button type="button" data-md="code" title="Code">&lt;/&gt;</button>
+          <span class="spacer"></span><button type="button" class="ok" data-md="done" title="Fertig">Fertig</button>
+        </div>
+        <div id="d-desc-view" class="desc-view md">${md(c.desc||'')}</div>
+        <textarea class="textarea" id="d-desc" hidden placeholder="Schreiben … Formatierung über die Knöpfe oben.">${esc(c.desc||'')}</textarea></div>
       <div class="sec"><h3>Checkliste ${cl.length?`<span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${cldone}/${cl.length}</span><div class="progress" style="max-width:140px"><i style="width:${pct}%"></i></div>`:''}</h3>
         <div class="cl" id="d-cl">${cl.map(i=>`<div class="cli ${i.done?'done':''}" data-i="${i.id}"><input type="checkbox" ${i.done?'checked':''}><input class="t" value="${esc(i.text)}"><button class="x" title="Entfernen">${ICON.x}</button></div>`).join('')}</div>
         <div class="row" style="margin-top:6px"><input class="input" id="d-cl-new" placeholder="Punkt hinzufügen … (Enter)"></div></div>
@@ -1374,12 +1529,12 @@ function renderDrawer(){
   const q=s=>$(s,d);
   q('#d-close').onclick=closeDrawer;
   q('#d-col').onchange=e=>moveCard(c.id,e.target.value,nextOrder(colCards(e.target.value)));
-  q('#d-done').onchange=e=>updateCard(c.id,{done:e.target.checked},e.target.checked?'Als erledigt markiert':'Wieder geöffnet');
+  q('#d-done').onchange=e=>{ undoCard(c.id,'Erledigt-Status',['done']); updateCard(c.id,{done:e.target.checked},e.target.checked?'Als erledigt markiert':'Wieder geöffnet'); };
   const title=q('#d-title'); const grow=()=>{ title.style.height='auto'; title.style.height=Math.max(34,title.scrollHeight)+'px'; }; grow(); requestAnimationFrame(grow); title.oninput=grow;
   title.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); title.blur(); } };
   title.onblur=()=>{ const v=title.value.trim(); if(v && v!==c.title) updateCard(c.id,{title:v},'Titel geändert'); else title.value=c.title; };
-  q('#d-due').onchange=e=>updateCard(c.id,{due:e.target.value},e.target.value?'Fällig am '+fmtDate(e.target.value):'Fälligkeit entfernt');
-  q('#d-prio').onchange=e=>updateCard(c.id,{priority:e.target.value},'Priorität: '+PRIOS[e.target.value]);
+  q('#d-due').onchange=e=>{ undoCard(c.id,'Fälligkeit',['due']); updateCard(c.id,{due:e.target.value},e.target.value?'Fällig am '+fmtDate(e.target.value):'Fälligkeit entfernt'); };
+  q('#d-prio').onchange=e=>{ undoCard(c.id,'Priorität',['priority']); updateCard(c.id,{priority:e.target.value},'Priorität: '+PRIOS[e.target.value]); };
   q('#d-repeat').onchange=e=>{ updateCard(c.id,{repeat:e.target.value},'Wiederholung: '+REPEATS[e.target.value]); renderDrawer(); };
   q('#d-repeatcol').onchange=e=>updateCard(c.id,{repeatColumnId:e.target.value});
   if(q('#d-fields-manage')) q('#d-fields-manage').onclick=fieldsModal;
@@ -1390,14 +1545,17 @@ function renderDrawer(){
   $$('[data-open]',d).forEach(a=>a.onclick=async e=>{ e.preventDefault(); const url=await signedUrl(a.dataset.open); if(url) window.open(url,'_blank','noopener'); });
   $$('[data-del]',d).forEach(x=>x.onclick=async()=>{ const a=(c.attachments||[]).find(y=>y.id===x.dataset.del); if(!a) return; if(!(await confirmModal('Anhang löschen',`„${esc(a.name)}“ löschen?`,'Löschen'))) return; await write(async()=>{ await sb.storage.from('attachments').remove([a.path]); await updateCard(c.id,{attachments:(c.attachments||[]).filter(y=>y.id!==a.id)},'Anhang entfernt: '+a.name); }); renderDrawer(); });
   $$('.thumb[data-type^="image/"]',d).forEach(async t=>{ const url=await signedUrl(t.dataset.path); if(url) t.style.backgroundImage=`url("${url}")`; });
-  $$('[data-l]',d).forEach(ch=>ch.onclick=()=>{ const ls=[...(c.labels||[])]; const i=ls.indexOf(ch.dataset.l); i>=0?ls.splice(i,1):ls.push(ch.dataset.l); updateCard(c.id,{labels:ls}); renderDrawer(); });
+  $$('[data-l]',d).forEach(ch=>ch.onclick=()=>{ undoCard(c.id,'Label',['labels']); const ls=[...(c.labels||[])]; const i=ls.indexOf(ch.dataset.l); i>=0?ls.splice(i,1):ls.push(ch.dataset.l); updateCard(c.id,{labels:ls}); renderDrawer(); });
   $$('[data-m]',d).forEach(ch=>ch.onclick=()=>{ const ls=[...(c.members||[])]; const i=ls.indexOf(ch.dataset.m); i>=0?ls.splice(i,1):ls.push(ch.dataset.m); updateCard(c.id,{members:ls}); renderDrawer(); });
   q('#d-labels-manage').onclick=labelsModal; q('#d-members-manage').onclick=membersModal;
-  $$('.swatches .swatch',d).forEach(s=>s.onclick=()=>{ updateCard(c.id,{cover:s.dataset.c}); renderDrawer(); });
-  const dv=q('#d-desc-view'), dt=q('#d-desc');
-  dv.onclick=e=>{ if(e.target.tagName==='A') return; dv.hidden=true; dt.hidden=false; q('#d-desc-hint').hidden=false; dt.style.height=Math.max(120,dt.scrollHeight)+'px'; dt.focus(); };
-  dt.onblur=()=>{ const v=dt.value; dt.hidden=true; dv.hidden=false; q('#d-desc-hint').hidden=true; if(v!==(c.desc||'')){ updateCard(c.id,{desc:v},'Beschreibung geändert'); dv.innerHTML=md(v); } };
-  dt.onkeydown=e=>{ if(e.key==='Escape'){ dt.value=c.desc||''; dt.blur(); } };
+  $$('.swatches .swatch',d).forEach(s=>s.onclick=()=>{ undoCard(c.id,'Kartenfarbe',['cover']); updateCard(c.id,{cover:s.dataset.c}); renderDrawer(); });
+  const dv=q('#d-desc-view'), dt=q('#d-desc'), mdbar=q('#d-mdbar');
+  const grow2=()=>{ dt.style.height='auto'; dt.style.height=Math.max(120,dt.scrollHeight)+'px'; };
+  dv.onclick=e=>{ if(e.target.tagName==='A') return; dv.hidden=true; dt.hidden=false; mdbar.hidden=false; grow2(); dt.focus(); };
+  dt.oninput=grow2;
+  dt.onblur=()=>{ setTimeout(()=>{ if(document.activeElement===dt) return; const v=dt.value; dt.hidden=true; dv.hidden=false; mdbar.hidden=true; if(v!==(c.desc||'')){ undoCard(c.id,'Beschreibung',['desc']); updateCard(c.id,{desc:v},'Beschreibung geändert'); dv.innerHTML=md(v); } },100); };
+  dt.onkeydown=e=>{ if(e.key==='Escape'){ dt.value=c.desc||''; dt.blur(); } else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='b'){ e.preventDefault(); mdApply('b'); } else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='i'){ e.preventDefault(); mdApply('i'); } };
+  $$('#d-mdbar button',d).forEach(b=>{ b.onmousedown=e=>e.preventDefault(); b.onclick=()=>{ if(b.dataset.md==='done') dt.blur(); else mdApply(b.dataset.md); }; });
   // checklist
   const saveCl=(list,msg)=>updateCard(c.id,{checklist:list},msg);
   $$('#d-cl .cli',d).forEach(row=>{
@@ -1525,7 +1683,8 @@ document.addEventListener('contextmenu',e=>{ if(drag.active||drag.timer) e.preve
 document.addEventListener('keydown',e=>{
   if(!S.authed) return;
   const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)||document.activeElement?.isContentEditable;
-  if(e.key==='Escape'){ if(popEl) closePop(); else if($('#modalwrap')) closeModal(); else if(S.openCard) closeDrawer(); else if(typing) document.activeElement.blur(); return; }
+  if(e.key==='Escape'){ if(popEl) closePop(); else if($('#modalwrap')) closeModal(); else if(S.openCard) closeDrawer(); else if(S.sel.size) clearSel(); else if(typing) document.activeElement.blur(); return; }
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'&&!typing){ e.preventDefault(); doUndo(); return; }
   if(typing) return;
   if(e.key==='/'){ e.preventDefault(); $('#q')?.focus(); }
   else if(e.key.toLowerCase()==='n' && board() && S.columns.length){ e.preventDefault(); if(S.view!=='board'){ S.view='board'; renderTopbar(); renderMain(); } const w=$(`.coladd[data-col="${S.columns[0].id}"]`); if(w) openAdd(w); }
@@ -1535,6 +1694,7 @@ document.addEventListener('keydown',e=>{
 
 /* ---------- Live indicator & boot ---------- */
 addEventListener('online',()=>$('#status')?.classList.remove('off')); addEventListener('offline',()=>$('#status')?.classList.add('off'));
+if('serviceWorker' in navigator && location.protocol==='https:'){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 boot();
 </script>
 </body>

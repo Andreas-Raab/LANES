@@ -1270,7 +1270,7 @@ function exportBoard(){
   setTimeout(()=>URL.revokeObjectURL(a.href),2000); toast('Export gespeichert');
 }
 function importModal(){
-  const w=modal(`<h2>Board importieren</h2><p class="muted sm" style="margin:-6px 0 0">JSON aus einem Lanes-Export oder eine Trello-Export-Datei (JSON) einfügen bzw. auswählen. Es wird ein neues Board angelegt.</p>
+  const w=modal(`<h2>Board importieren</h2><p class="muted sm" style="margin:-6px 0 0">JSON aus einem Lanes-, Trello- oder MeisterTask-Export einfügen bzw. auswählen. Es wird ein neues Board angelegt.</p>
     <input type="file" id="impfile" accept="application/json,.json" class="input">
     <textarea class="textarea" id="imp" placeholder="… oder JSON hier einfügen" style="min-height:140px;font-family:ui-monospace,monospace;font-size:12px"></textarea>
     <div class="err" id="imperr"></div>
@@ -1281,6 +1281,7 @@ function importModal(){
     closeModal();
     await write(async()=>{
       if(data.format==='lanes/1'){ await importLanes(data); }
+      else if(data.sections && data.tasks){ await importMeister(data); }
       else if(data.lists && data.cards){ await importTrello(data); }
       else throw new Error('Unbekanntes Format');
     },'Import abgeschlossen');
@@ -1293,6 +1294,32 @@ async function importLanes(d){
   for(const c of d.columns){ const nid=uid(); colMap[c.id]=nid; const cc={...c}; delete cc.id; cc.boardId=bid; await dbSet('columns',{id:nid,...cc}); }
   for(const c of d.cards){ const cc={...c}; delete cc.id; cc.boardId=bid; cc.columnId=colMap[c.columnId]||Object.values(colMap)[0]; if(!cc.columnId) continue; await dbSet('cards',{id:uid(),...cc}); }
   subscribeBoard(bid);
+}
+async function importMeister(d){
+  const bid=uid();
+  const hexOf=c=>{ if(!c) return ''; c=String(c).replace(/^#/,''); return /^[0-9a-fA-F]{3,8}$/.test(c)?'#'+c:''; };
+  const labels=(d.labels||[]).filter(l=>l.name).map(l=>({id:l.hashid||uid(),name:l.name,color:hexOf(l.color)||LABEL_COLORS[5]}));
+  await dbSet('boards',{id:bid, ownerId:S.user?.id, name:(d.project?.name||'MeisterTask')+' (Import)', color:BOARD_COLORS[6], order:nextOrder(S.boards), labels, members:[], fields:[], bg:{type:'tint'}, nextNum:1, createdAt:now(), archived:false});
+  const doneRe=/erledigt|done|fertig|abgeschlossen|completed/i;
+  const sections=[...(d.sections||[])].sort((a,b)=>(a.sequence||0)-(b.sequence||0));
+  const colMap={}; let o=1000;
+  for(const s2 of sections){ const nid=uid(); colMap[s2.hashid]=nid; await dbSet('columns',{id:nid, boardId:bid, name:s2.name||'Ohne Name', order:o, wip:s2.limit||0, collapsed:false, done:doneRe.test(s2.name||''), color:hexOf(s2.color)}); o+=1000; }
+  const clName={}; (d.checklists||[]).forEach(c=>{ clName[c.hashid]=c; });
+  const clByTask={};
+  (d.checklist_items||[]).forEach(i=>{ const cl=clName[i.checklist_id]; if(!cl||!cl.task_id) return; (clByTask[cl.task_id]=clByTask[cl.task_id]||[]).push({id:uid(), text:i.name||'', done:i.status!==1, _seq:i.sequence||0}); });
+  const labelByTask={}; (d.task_labels||[]).forEach(tl=>{ (labelByTask[tl.task_id]=labelByTask[tl.task_id]||[]).push(tl.label_id); });
+  const tasks=[...(d.tasks||[])].sort((a,b)=>(a.sequence||0)-(b.sequence||0));
+  let num=1, skipped=0;
+  for(const t of tasks){
+    const columnId=colMap[t.section_id]; if(!columnId){ skipped++; continue; }
+    const sec=sections.find(x=>x.hashid===t.section_id);
+    const done=!!t.completed_at || t.status===2 || doneRe.test(sec?.name||'');
+    const cl=(clByTask[t.hashid]||[]).sort((a,b)=>a._seq-b._seq).map(i=>({id:i.id,text:i.text,done:i.done}));
+    await dbSet('cards',{id:uid(), boardId:bid, columnId, order:(t.sequence!=null?t.sequence:num*1000), num:num++, title:t.name||'(ohne Titel)', desc:(t.notes||'').trim(), labels:(labelByTask[t.hashid]||[]).filter(id=>labels.find(l=>l.id===id)), members:[], priority:'none', due:t.due?String(t.due).slice(0,10):'', cover:'', checklist:cl, comments:[], attachments:[], fields:{}, repeat:'none', activity:[act('Aus MeisterTask importiert')], archived:false, done, createdAt:now(), updatedAt:now()});
+  }
+  await dbUpdate('boards',bid,{nextNum:num});
+  subscribeBoard(bid);
+  if(skipped) toast(skipped+' Aufgabe(n) ohne Abschnitt übersprungen.');
 }
 async function importTrello(d){
   const bid=uid(); const labels=(d.labels||[]).filter(l=>l.name).map(l=>({id:l.id,name:l.name,color:trelloColor(l.color)}));

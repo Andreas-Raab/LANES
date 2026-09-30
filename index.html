@@ -137,6 +137,12 @@ kbd{font-family:var(--font);font-size:11px;border:1px solid var(--line2);border-
 .col.over-wip .colhead .count{background:var(--crit-soft);color:var(--crit);border-color:transparent;font-weight:600}
 .col.at-wip .colhead .count{background:var(--warn-soft);color:var(--warn);border-color:transparent;font-weight:600}
 .col.done-col .colhead .cname::before{content:"✓ ";color:var(--ok)}
+.col.inbox{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 8px 24px -12px rgba(20,30,50,.25)}
+.col.inbox::before{background:var(--accent)}
+.col.inbox .colhead{cursor:default}
+.inboxname{font-family:var(--display);font-weight:700;font-size:14px;flex:1;min-width:0;color:var(--accent-text);letter-spacing:.02em}
+.col.inbox .count{background:var(--accent-soft);color:var(--accent-text);border-color:transparent;font-weight:600}
+.coladd.inbox-hint{padding:2px 12px 12px;line-height:1.35}
 .colbody{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 8px 4px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin}
 .colbody:empty{min-height:56px;margin:4px 8px;border:1.5px dashed color-mix(in srgb,var(--ink) 18%,transparent);border-radius:10px;display:flex;align-items:center;justify-content:center}
 .colbody:empty::after{content:"Karten hierher ziehen";font-size:12px;color:var(--muted)}
@@ -296,6 +302,8 @@ table.tbl tbody tr:hover td{background:var(--surface2)}
 .tpl button span{font-size:12px;color:var(--muted)}
 .lrow{display:flex;align-items:center;gap:8px;padding:4px 0}
 .lrow input.input{flex:1}
+.input.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.callout{background:var(--surface2,var(--surface));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:13px}
 .colorpick{display:flex;gap:5px;flex-wrap:wrap}
 .colorpick .swatch{width:22px;height:22px;border-radius:50%}
 
@@ -431,6 +439,7 @@ const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
 const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = ()=> (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'').slice(0,12) : Math.random().toString(36).slice(2,14));
 const now = ()=> new Date().toISOString();
+const INBOX_COL = '__inbox__'; // Sentinel-Spalte für Karten aus dem E-Mail-Eingang ("NEUES")
 const LS = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
 const SS = {get(k){try{return JSON.parse(sessionStorage.getItem(k))}catch{return null}},set(k,v){try{sessionStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{sessionStorage.removeItem(k)}catch{}}};
 const LABEL_COLORS = ['#D9534F','#E8863B','#D9B12D','#3FA55C','#2A9D8F','#3B7DD8','#8A5CD6','#D65C9E','#8B95A5'];
@@ -769,6 +778,7 @@ async function subscribeBoard(id){
 const board = ()=> S.boards.find(b=>b.id===S.boardId);
 const myRole = ()=> (board()?.ownerId && board().ownerId===S.user?.id) ? 'owner' : (S.memberRole||'editor');
 const colCards = cid => S.cards.filter(c=>c.columnId===cid && !c.archived);
+const inboxCards = ()=> S.cards.filter(c=>c.columnId===INBOX_COL && !c.archived);
 async function write(fn, okMsg){
   try{ await fn(); if(okMsg) toast(okMsg); }
   catch(e){ console.error(e); logErr('write',e); toast('Speichern fehlgeschlagen: '+(e.message||e.code||e)); }
@@ -871,7 +881,8 @@ async function moveCard(id, columnId, order, noUndo){
   if(!noUndo && (c.columnId!==columnId || c.order!==order)){ const b={columnId:c.columnId, order:c.order, done:c.done}; pushUndo('Verschieben', ()=>updateCard(id,b)); }
   const patch={columnId, order};
   let activity=null;
-  if(from && col && from.id!==col.id){ activity=`Verschoben: ${from.name} → ${col.name}`; if(col.done && !c.done) patch.done=true; if(!col.done && from.done && c.done) patch.done=false; }
+  if(c.columnId===INBOX_COL && col){ patch.inbox=false; activity=`Aus „NEUES“ übernommen → ${col.name}`; if(col.done && !c.done) patch.done=true; }
+  else if(from && col && from.id!==col.id){ activity=`Verschoben: ${from.name} → ${col.name}`; if(col.done && !c.done) patch.done=true; if(!col.done && from.done && c.done) patch.done=false; }
   await updateCard(id, patch, activity);
 }
 async function archiveCard(id, arch=true){
@@ -1015,6 +1026,7 @@ function settingsMenu(a){
     <button class="mi" id="m-import">Board importieren</button>
     <hr>`:''}
     <button class="mi" id="m-newboard">${ICON.plus} Neues Board</button>
+    <button class="mi" id="m-inbox">E-Mail-Eingang (NEUES) …</button>
     <button class="mi" id="m-notify">${LS.get('lanes.notify')?'Erinnerungen: an':'Erinnerungen aktivieren'}</button>
     <div class="sec muted sm" style="padding-top:2px">${esc(S.user?.email||'')}</div>
     <button class="mi" id="m-pw">Passwort ändern</button>
@@ -1026,8 +1038,61 @@ function settingsMenu(a){
   const on=(id,fn)=>{ const el=$(id,p); if(el) el.onclick=()=>{ closePop(); fn(); }; };
   on('#m-rename', renameBoardModal); on('#m-labels', labelsModal); on('#m-members', membersModal); on('#m-fields', fieldsModal); on('#m-bg', bgModal); on('#m-share', shareModal); on('#m-notify', toggleNotify);
   on('#m-archive', archiveModal); on('#m-stats', statsModal); on('#m-export', exportBoard); on('#m-import', importModal);
-  on('#m-newboard', newBoardModal); on('#m-pw', ()=>changePwModal()); on('#m-errlog', errlogModal); on('#m-theme', toggleTheme); on('#m-keys', keysModal); on('#m-logout', logout);
+  on('#m-newboard', newBoardModal); on('#m-inbox', inboxModal); on('#m-pw', ()=>changePwModal()); on('#m-errlog', errlogModal); on('#m-theme', toggleTheme); on('#m-keys', keysModal); on('#m-logout', logout);
   on('#m-delete', async()=>{ if(await confirmModal('Board löschen', `„${esc(b.name)}“ mit allen ${S.cards.length} Karten endgültig löschen?`, 'Endgültig löschen')) deleteBoard(); });
+}
+
+/* ---------- E-Mail-Eingang ("NEUES") ---------- */
+async function copyClip(text, okMsg){ try{ await navigator.clipboard.writeText(text); toast(okMsg||'Kopiert'); }catch{ toast('Kopieren nicht möglich'); } }
+async function inboxModal(){
+  const url = CONFIG.SUPABASE_URL.replace(/\/+$/,'') + '/rest/v1/rpc/lanes_inbox_add';
+  const w = modal(`<h2>E-Mail-Eingang (NEUES)</h2>
+    <p class="muted sm" style="margin:-6px 0 0">Karten, die per E-Mail über einen Dienst wie Make eintreffen, landen in der Spalte „NEUES" des gewählten Boards. Diese Spalte erscheint nur, wenn neue Karten da sind, und verschwindet wieder, sobald du sie in eine Spalte gezogen hast.</p>
+    <div id="ibx-body"><div class="muted sm" style="padding:14px 0">Lade Einstellungen …</div></div>`);
+  let cfg=null, err=null;
+  try{ const {data,error}=await sb.from('lanes_inbox').select('token,board_id').eq('id',1).maybeSingle(); if(error) throw error; cfg=data; }
+  catch(e){ err=e; }
+  const body=$('#ibx-body',w);
+  if(err || !cfg){
+    body.innerHTML=`<div class="callout" style="margin-top:10px">Die Datenbank-Funktion ist noch nicht eingerichtet.<br><span class="sm muted">Bitte einmalig <code>inbox.sql</code> im Supabase-SQL-Editor ausführen, dann diesen Dialog erneut öffnen.</span></div>
+      <div class="actions"><button class="btn" id="ibx-close">Schließen</button></div>`;
+    $('#ibx-close',body).onclick=closeModal; return;
+  }
+  const draw=()=>{
+    const opts = S.boards.map(b=>`<option value="${b.id}" ${b.id===cfg.board_id?'selected':''}>${esc(b.name)}</option>`).join('');
+    body.innerHTML=`
+      <div style="margin-top:12px"><label class="lbl" for="ibx-board">Eingangs-Board</label>
+        <select class="select" id="ibx-board">${cfg.board_id?'':'<option value="">— bitte wählen —</option>'}${opts}</select>
+        <div class="sm muted" style="margin-top:4px">Hier erscheint die „NEUES"-Spalte.</div></div>
+
+      <div style="margin-top:14px"><label class="lbl">Webhook-URL (im E-Mail-Dienst als Ziel eintragen)</label>
+        <div class="lrow"><input class="input mono" id="ibx-url" readonly value="${esc(url)}"><button class="btn sm" id="ibx-url-c">Kopieren</button></div></div>
+
+      <div style="margin-top:10px"><label class="lbl">apikey-Header (öffentlicher Schlüssel)</label>
+        <div class="lrow"><input class="input mono" id="ibx-key" readonly value="${esc(CONFIG.SUPABASE_ANON_KEY)}"><button class="btn sm" id="ibx-key-c">Kopieren</button></div></div>
+
+      <div style="margin-top:10px"><label class="lbl">Geheim-Token (Feld <code>p_token</code> im Nachrichtentext)</label>
+        <div class="lrow"><input class="input mono" id="ibx-tok" readonly value="${esc(cfg.token)}"><button class="btn sm" id="ibx-tok-c">Kopieren</button><button class="btn sm" id="ibx-tok-n" title="Neues Token erzeugen – alter Zugang wird ungültig">Neu</button></div>
+        <div class="sm muted" style="margin-top:4px">Wer dieses Token hat, kann Karten anlegen. Nicht öffentlich teilen.</div></div>
+
+      <div class="actions"><button class="btn" id="ibx-close">Schließen</button><button class="btn primary" id="ibx-save">Board speichern</button></div>`;
+    $('#ibx-url-c',body).onclick=()=>copyClip(url,'URL kopiert');
+    $('#ibx-key-c',body).onclick=()=>copyClip(CONFIG.SUPABASE_ANON_KEY,'Schlüssel kopiert');
+    $('#ibx-tok-c',body).onclick=()=>copyClip(cfg.token,'Token kopiert');
+    $('#ibx-tok-n',body).onclick=async()=>{
+      if(!await confirmModal('Neues Token','Ein neues Token erzeugen? Der alte Zugang im E-Mail-Dienst funktioniert dann nicht mehr, bis du das neue Token dort einträgst.','Neu erzeugen',false)) return;
+      const t=(crypto.randomUUID?crypto.randomUUID():uid()+uid()).replace(/-/g,'');
+      try{ const {error}=await sb.from('lanes_inbox').update({token:t,updated_at:now()}).eq('id',1); if(error) throw error; cfg.token=t; draw(); toast('Neues Token erzeugt'); }
+      catch(e){ toast('Fehlgeschlagen: '+(e.message||e)); }
+    };
+    $('#ibx-close',body).onclick=closeModal;
+    $('#ibx-save',body).onclick=async()=>{
+      const bid=$('#ibx-board',body).value; if(!bid){ toast('Bitte ein Board wählen.'); return; }
+      try{ const {error}=await sb.from('lanes_inbox').update({board_id:bid,updated_at:now()}).eq('id',1); if(error) throw error; cfg.board_id=bid; closeModal(); toast('Eingangs-Board gespeichert'); }
+      catch(e){ toast('Speichern fehlgeschlagen: '+(e.message||e)); }
+    };
+  };
+  draw();
 }
 
 /* ---------- Benutzerdefinierte Felder ---------- */
@@ -1400,7 +1465,8 @@ function renderBoard(m){
   // preserve column scroll
   $$('.colbody',m).forEach(el=>S.colScroll[el.dataset.col]=el.scrollTop);
   const addOpen = $('.coladd textarea',m)?.closest('.col')?.dataset.id; const addVal=$('.coladd textarea',m)?.value;
-  const html = `<div id="board">${S.columns.map(col=>{
+  const inbox = board()? visibleCards(inboxCards()) : [];
+  const html = `<div id="board">${inbox.length?inboxColHTML(inbox):''}${S.columns.map(col=>{
     const all=colCards(col.id); const cards=visibleCards(all); const n=all.length;
     const wipCls = col.wip? (n>col.wip?'over-wip':n===col.wip?'at-wip':'') : '';
     return `<section class="col ${col.collapsed?'collapsed':''} ${wipCls} ${col.done?'done-col':''} ${col.color?'has-color':''}" data-id="${col.id}" style="${col.color?'--colc:'+col.color:''}">
@@ -1441,6 +1507,16 @@ function renderBoard(m){
   if(!S.columns.length){
     bd.insertAdjacentHTML('afterbegin',`<div class="empty" style="margin:auto 0;width:300px"><h2>Noch keine Spalten</h2><p>Lege rechts die erste Spalte an, z. B. „To Do“.</p></div>`);
   }
+}
+function inboxColHTML(cards){
+  return `<section class="col inbox" data-id="${INBOX_COL}">
+    <div class="colhead">
+      <span class="inboxname">✉︎ NEUES</span>
+      <span class="count" title="Neue Karten aus E-Mails">${cards.length}</span>
+    </div>
+    <div class="colbody" data-col="${INBOX_COL}">${cards.map(cardHTML).join('')}</div>
+    <div class="coladd inbox-hint"><span class="sm muted">Per E-Mail eingegangen. Zum Verarbeiten in eine Spalte ziehen.</span></div>
+  </section>`;
 }
 function openAdd(wrap){
   wrap.innerHTML=`<textarea placeholder="Titel der Karte …"></textarea><div class="row" style="margin-top:6px"><button class="btn primary sm add-ok">Hinzufügen</button><button class="btn ghost sm add-cancel">Abbrechen</button></div>`;
@@ -1690,6 +1766,7 @@ function onPD(e){
   if(!card && !head) return;
   if(e.target.closest('button,input,textarea,select,a,[contenteditable]')) return;
   const el = card || head.closest('.col');
+  if(!card && el?.dataset.id===INBOX_COL) return; // NEUES-Spalte nicht als Spalte verschieben
   drag.type = card?'card':'col'; drag.el=el; drag.id=el.dataset.id; drag.startX=e.clientX; drag.startY=e.clientY; drag.moved=false; drag.pid=e.pointerId;
   const r=el.getBoundingClientRect(); drag.offX=e.clientX-r.left; drag.offY=e.clientY-r.top;
   if(e.pointerType==='touch'){ drag.timer=setTimeout(()=>startDrag(e),280); }
@@ -1746,7 +1823,8 @@ function onPU(e){
       const c=S.cards.find(x=>x.id===drag.id);
       const order=orderBetween(prev,next);
       cleanupDrag(true);
-      if(c && (c.columnId!==colId || c.order!==order)) moveCard(drag.id,colId,order);
+      if(c && colId===INBOX_COL && c.columnId!==INBOX_COL){ renderMain(); toast('„NEUES“ wird nur per E-Mail befüllt.'); }
+      else if(c && (c.columnId!==colId || c.order!==order)) moveCard(drag.id,colId,order);
       else renderMain();
     } else {
       const bd=$('#board'); const idx=[...bd.children].indexOf(ph);
